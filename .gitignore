@@ -1,0 +1,24 @@
+.idea/
+target/
+*.iml
+.*orig
+node_modules/
+dist/
+.bloop
+.vscode
+.metals
+**/db.log
+**/db.properties
+**/db.script
+**/db.lck
+**/db.tmp
+dbFiles/*
+*.jar
+**/npm-debug.log
+ui/server/work
+ui/develConf/*.jar
+_book/
+# Ignore Mac DS_Store files
+.DS_Store
+*.log.logstashjson
+out/

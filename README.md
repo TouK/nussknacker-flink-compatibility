@@ -11,3 +11,5 @@ Each supported Flink version (e.g. 1.9) comes with two modules:
 Following tests will be provided to check if all needed changes are found:
 - GenericItSpec based on [generic model test](https://github.com/TouK/nussknacker/blob/staging/engine/flink/generic/src/test/scala/pl/touk/nussknacker/genericmodel/GenericItSpec.scala)
 - TODO: integration test to check ProcessManager implementation
+
+Additionally in this repo you can find out classes that can help in running our testing framework with lower Flink's version - see `flink16/test-util` module.

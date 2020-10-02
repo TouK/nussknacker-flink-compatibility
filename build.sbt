@@ -2,7 +2,15 @@ import sbt.Keys._
 import sbtassembly.AssemblyPlugin.autoImport.assembly
 import sbtassembly.{MergeStrategy, PathList}
 
-val scalaV = "2.12.10"
+val scala211V = "2.11.12"
+val scala212V = "2.12.10"
+
+val scalaCollectionsCompatV = "2.1.6"
+
+// Silencer must be compatible with exact scala version - see compatibility matrix: https://search.maven.org/search?q=silencer-plugin
+// Silencer 1.7.x require Scala 2.12.11 (see warning above)
+val silencerV_2_12 = "1.6.0"
+val silencerV = "1.7.0"
 
 version in ThisBuild := "0.1-SNAPSHOT"
 
@@ -10,7 +18,7 @@ val nussknackerV = "2020-09-28-15-13-staging-41d711807ac4c9ab845040f15dd5def2808
 
 val scalaTestV = "3.0.3"
 
-val commonSettings =
+def commonSettings(scalaV: String) =
   Seq(
     organization := "pl.touk.nussknacker.flinkcompatibility",
     resolvers ++= Seq(
@@ -32,15 +40,28 @@ val commonSettings =
       "-J-Xss4M"
     ),
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+    // We can't use addCompilerPlugin because it not support usage of scalaVersion.value
+    libraryDependencies += compilerPlugin("com.github.ghik" % "silencer-plugin" % (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, 12)) => silencerV_2_12
+      case _             => silencerV
+    }) cross CrossVersion.full),
+    libraryDependencies ++= Seq(
+      "com.github.ghik" % "silencer-lib" % (CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 12)) => silencerV_2_12
+        case _             => silencerV
+      }) % Provided cross CrossVersion.full,
+      "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionsCompatV
+    ),
     assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, level = Level.Info),
     assemblyMergeStrategy in assembly := nussknackerAssemblyStrategy,
     assemblyJarName in assembly := s"${name.value}-assembly.jar"
   )
 
+val flink16V = "1.6.4"
 val flink19V = "1.9.2"
 
 lazy val flink19ModelCompat = (project in file("flink19/model")).
-  settings(commonSettings).
+  settings(commonSettings(scala212V)).
   settings(
     name := "flink19-model",
     libraryDependencies ++= deps(flink19V),
@@ -51,7 +72,7 @@ lazy val flink19ModelCompat = (project in file("flink19/model")).
   )
 
 lazy val flink19ManagerCompat = (project in file("flink19/manager")).
-  settings(commonSettings).
+  settings(commonSettings(scala212V)).
   settings(
     name := "flink19-manager",
     libraryDependencies ++= managerDeps(flink19V),
@@ -59,6 +80,14 @@ lazy val flink19ManagerCompat = (project in file("flink19/manager")).
       //???
       "org.apache.kafka" % "kafka-clients" % "2.2.0"
     )
+  )
+
+lazy val flink16TestUtilCompat = (project in file("flink16/test-util")).
+  settings(commonSettings(scala211V)).
+  settings(
+    name := "flink16-test-util",
+    libraryDependencies ++= testUtilDeps(flink16V),
+    dependencyOverrides ++= flinkOverrides(flink16V)
   )
 
 def managerDeps(version: String) = Seq(
@@ -80,6 +109,10 @@ def deps(version: String) = Seq(
   "pl.touk.nussknacker" %% "nussknacker-kafka-test-util" % nussknackerV % "test",
   "pl.touk.nussknacker" %% "nussknacker-flink-test-util" % nussknackerV % "test",
   "org.apache.flink" %% "flink-streaming-scala" % version % "test",
+)
+
+def testUtilDeps(version: String) = Seq(
+  "pl.touk.nussknacker" %% "nussknacker-flink-test-util" % nussknackerV
 )
 
 def flinkOverrides(version: String) = Seq(
