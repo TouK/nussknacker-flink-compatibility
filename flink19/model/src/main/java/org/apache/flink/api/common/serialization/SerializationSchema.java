@@ -26,6 +26,9 @@ import org.apache.flink.metrics.MetricGroup;
 import java.io.Serializable;
 
 /**
+ * This class is copy-pasted from Flink's repo to provide InitializationContext class for lower versions.
+ * Interface methods are from Flink 1.9, while InitializationContext is from Flink 1.11 (see also README.md in this module)
+ *
  * The serialization schema describes how to turn a data object into a different serialized
  * representation. Most data sinks (for example Apache Kafka) require the data to be handed
  * to them in a specific format (for example as byte strings).

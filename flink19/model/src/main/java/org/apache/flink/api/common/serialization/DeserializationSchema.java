@@ -27,6 +27,7 @@ import java.io.Serializable;
 
 /**
  * This class is copy-pasted from Flink's repo to provide InitializationContext class for lower versions.
+ * Interface methods are from Flink 1.9, while InitializationContext is from Flink 1.11 (see also README.md in this module)
  *
  * The deserialization schema describes how to turn the byte messages delivered by certain
  * data sources (for example Apache Kafka) into data types (Java/Scala objects) that are
