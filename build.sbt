@@ -14,7 +14,7 @@ val silencerV = "1.7.0"
 
 version in ThisBuild := "0.1-SNAPSHOT"
 
-val nussknackerV = "2020-09-28-15-13-staging-41d711807ac4c9ab845040f15dd5def28086759d-SNAPSHOT"
+val nussknackerV = "2020-10-06-12-25-staging-2a25b6e6c3be34c7e93abc5a776eff112680e0e9-SNAPSHOT"
 
 val scalaTestV = "3.0.3"
 
@@ -67,7 +67,7 @@ lazy val flink19ModelCompat = (project in file("flink19/model")).
     libraryDependencies ++= deps(flink19V),
     dependencyOverrides ++= flinkOverrides(flink19V) ++ Seq(
       //???
-      "org.apache.kafka" % "kafka-clients" % "2.2.0"
+      "org.apache.kafka" % "kafka-clients" % "2.4.1"
     )
   )
 
@@ -78,7 +78,7 @@ lazy val flink19ManagerCompat = (project in file("flink19/manager")).
     libraryDependencies ++= managerDeps(flink19V),
     dependencyOverrides ++= flinkOverrides(flink19V) ++ Seq(
       //???
-      "org.apache.kafka" % "kafka-clients" % "2.2.0"
+      "org.apache.kafka" % "kafka-clients" % "2.4.1"
     )
   )
 
