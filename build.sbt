@@ -14,7 +14,7 @@ val silencerV = "1.7.0"
 
 version in ThisBuild := "0.1-SNAPSHOT"
 
-val nussknackerV = "2020-10-06-12-25-staging-2a25b6e6c3be34c7e93abc5a776eff112680e0e9-SNAPSHOT"
+val nussknackerV = "2020-10-12-12-39-staging-1d8a8db019c33aa0fe6ff60b0f1435bcc6206f9e-SNAPSHOT"
 
 val scalaTestV = "3.0.3"
 
@@ -80,6 +80,14 @@ lazy val flink19ManagerCompat = (project in file("flink19/manager")).
       //???
       "org.apache.kafka" % "kafka-clients" % "2.4.1"
     )
+  )
+
+lazy val flink19TestUtilCompat = (project in file("flink19/test-util")).
+  settings(commonSettings(scala211V)).
+  settings(
+    name := "flink19-test-util",
+    libraryDependencies ++= testUtilDeps(flink19V),
+    dependencyOverrides ++= flinkOverrides(flink19V)
   )
 
 lazy val flink16TestUtilCompat = (project in file("flink16/test-util")).

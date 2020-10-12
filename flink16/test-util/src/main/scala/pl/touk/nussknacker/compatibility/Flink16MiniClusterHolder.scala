@@ -7,12 +7,16 @@ import com.github.ghik.silencer.silent
 import org.apache.flink.api.common.JobID
 import org.apache.flink.client.program.ClusterClient
 import org.apache.flink.configuration.{ConfigConstants, Configuration, CoreOptions, TaskManagerOptions}
+import org.apache.flink.runtime.client.JobStatusMessage
 import org.apache.flink.runtime.executiongraph.AccessExecutionGraph
+import org.apache.flink.runtime.jobgraph.{JobGraph, JobStatus}
 import org.apache.flink.runtime.minicluster.MiniCluster
 import org.apache.flink.test.util.TestBaseUtils.CodebaseType
 import org.apache.flink.test.util.{MiniClusterResource, MiniClusterResourceConfiguration}
 import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder
 import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder.AdditionalEnvironmentConfig
+
+import scala.collection.JavaConverters._
 
 object Flink16MiniClusterHolder {
 
@@ -65,13 +69,26 @@ class Flink16MiniClusterHolder(miniClusterResource: MiniClusterResource,
     miniClusterResource.after()
   }
 
-  override def getClusterClient: ClusterClient[_] = {
+  override def cancelJob(jobID: JobID): Unit =
+    miniClusterResource.getClusterClient.cancel(jobID)
+
+  override def submitJob(jobGraph: JobGraph): JobID =
+    miniClusterResource.getClusterClient.submitJob(jobGraph, getClass.getClassLoader).getJobID
+
+  def getClusterClient: ClusterClient[_] = {
     miniClusterResource.getClusterClient
   }
 
   override def getExecutionGraph(jobId: JobID): CompletableFuture[_ <: AccessExecutionGraph] = {
     miniCluster.getExecutionGraph(jobId)
   }
+
+  override def runningJobs(): Iterable[JobID] =
+    listJobs().filter(_.getJobState == JobStatus.RUNNING).map(_.getJobId)
+
+  override def listJobs(): Iterable[JobStatusMessage] =
+    miniClusterResource.getClusterClient.listJobs().get().asScala.toList
+
 
 }
 
