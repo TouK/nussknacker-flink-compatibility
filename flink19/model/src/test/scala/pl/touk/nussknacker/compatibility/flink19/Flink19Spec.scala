@@ -2,15 +2,19 @@ package pl.touk.nussknacker.compatibility.flink19
 
 import org.apache.flink.api.common.{JobExecutionResult, JobID}
 import org.apache.flink.configuration.{ConfigConstants, Configuration, MemorySize, NettyShuffleEnvironmentOptions, TaskManagerOptions}
+import org.apache.flink.runtime.client.JobStatusMessage
+import org.apache.flink.runtime.executiongraph.AccessExecutionGraph
 import org.apache.flink.runtime.jobgraph.JobGraph
 import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration
 import org.apache.flink.streaming.api.graph.StreamGraph
 import org.apache.flink.test.util.MiniClusterWithClientResource
 import org.apache.flink.util.OptionalFailure
-import org.scalatest.{BeforeAndAfterAll, Suite}
+import org.scalatest.{Assertion, BeforeAndAfterAll, Suite}
 import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder.AdditionalEnvironmentConfig
 import pl.touk.nussknacker.engine.flink.test.FlinkTestConfiguration.addQueryableStatePortRanges
 import pl.touk.nussknacker.engine.flink.test.{FlinkMiniClusterHolder, FlinkMiniClusterHolderImpl, MiniClusterExecutionEnvironment}
+
+import scala.jdk.CollectionConverters.collectionAsScalaIterableConverter
 
 trait Flink19Spec extends BeforeAndAfterAll {
   self: Suite =>
@@ -49,11 +53,21 @@ trait Flink19Spec extends BeforeAndAfterAll {
             new JobExecutionResult(submissionResult.getJobID, 0, new java.util.HashMap[String, OptionalFailure[AnyRef]]())
           }
 
-          override def cancel(jobId: JobID): Unit = {
-            flinkMiniClusterHolder.getClusterClient.cancel(jobId)
+          override protected def assertJobInitialized(executionGraph: AccessExecutionGraph): Assertion = {
+            assert(true)
           }
         }
       }
+
+      override def cancelJob(jobID: JobID): Unit =
+        this.getClusterClient.cancel(jobID)
+
+      override def submitJob(jobGraph: JobGraph): JobID =
+        this.getClusterClient.submitJob(jobGraph, getClass.getClassLoader).getJobID
+
+      override def listJobs(): List[JobStatusMessage] =
+        this.getClusterClient.listJobs().get().asScala.toList
+
     }
 
     flinkMiniCluster.start()

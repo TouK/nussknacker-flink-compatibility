@@ -10,7 +10,7 @@ import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.flink.api.common.ExecutionConfig
 import org.scalatest.{EitherValues, FunSuite, Matchers}
-import pl.touk.nussknacker.compatibility.flink19.Flink19Spec
+import pl.touk.nussknacker.compatibility.flink111.Flink111Spec
 import pl.touk.nussknacker.engine.api.process.ProcessObjectDependencies
 import pl.touk.nussknacker.engine.api.{MetaData, ProcessVersion, StreamMetaData}
 import pl.touk.nussknacker.engine.avro.encode.{BestEffortAvroEncoder, ValidationMode}
@@ -32,7 +32,7 @@ import pl.touk.nussknacker.engine.testing.LocalModelData
 import pl.touk.nussknacker.engine.util.namespaces.ObjectNamingProvider
 import pl.touk.nussknacker.genericmodel.GenericConfigCreator
 
-class GenericItSpec extends FunSuite with Flink19Spec with Matchers with KafkaSpec with EitherValues with LazyLogging {
+class GenericItSpec extends FunSuite with Flink111Spec with Matchers with KafkaSpec with EitherValues with LazyLogging {
 
   import KafkaZookeeperUtils._
   import MockSchemaRegistry._
