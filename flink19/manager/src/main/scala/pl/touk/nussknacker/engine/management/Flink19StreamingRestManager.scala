@@ -3,7 +3,7 @@ package pl.touk.nussknacker.engine.management
 import org.apache.flink.runtime.jobgraph.JobStatus
 import pl.touk.nussknacker.engine.ModelData
 import pl.touk.nussknacker.engine.api.deployment.StateStatus
-import pl.touk.nussknacker.engine.management.flinkRestModel.JobOverview
+import pl.touk.nussknacker.engine.management.rest.flinkRestModel.JobOverview
 import sttp.client.{NothingT, SttpBackend}
 
 import scala.concurrent.Future

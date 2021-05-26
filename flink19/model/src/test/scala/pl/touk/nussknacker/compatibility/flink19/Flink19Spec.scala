@@ -1,16 +1,12 @@
 package pl.touk.nussknacker.compatibility.flink19
 
-import org.apache.flink.api.common.{JobExecutionResult, JobID}
-import org.apache.flink.configuration.{ConfigConstants, Configuration, MemorySize, NettyShuffleEnvironmentOptions, TaskManagerOptions}
-import org.apache.flink.runtime.jobgraph.JobGraph
+import org.apache.flink.configuration.{ConfigConstants, Configuration, NettyShuffleEnvironmentOptions, TaskManagerOptions}
 import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration
-import org.apache.flink.streaming.api.graph.StreamGraph
 import org.apache.flink.test.util.MiniClusterWithClientResource
-import org.apache.flink.util.OptionalFailure
 import org.scalatest.{BeforeAndAfterAll, Suite}
 import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder.AdditionalEnvironmentConfig
 import pl.touk.nussknacker.engine.flink.test.FlinkTestConfiguration.addQueryableStatePortRanges
-import pl.touk.nussknacker.engine.flink.test.{FlinkMiniClusterHolder, FlinkMiniClusterHolderImpl, MiniClusterExecutionEnvironment}
+import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder
 
 trait Flink19Spec extends BeforeAndAfterAll {
   self: Suite =>
@@ -29,33 +25,7 @@ trait Flink19Spec extends BeforeAndAfterAll {
       .build
 
     val resource = new MiniClusterWithClientResource(clusterConfig)
-
-    //Flink 1.9, getClusterClient is tricky, as Class became interface in Flink 1.10
-    flinkMiniCluster = new FlinkMiniClusterHolderImpl(resource, userFlinkClusterConfig, prepareEnvConfig()) {
-      override final def createExecutionEnvironment(): MiniClusterExecutionEnvironment = {
-        val flinkMiniClusterHolder = this
-        new MiniClusterExecutionEnvironment(this, userFlinkClusterConfig, envConfig) {
-          override def execute(streamGraph: StreamGraph): JobExecutionResult = {
-            val jobGraph: JobGraph = streamGraph.getJobGraph
-            logger.debug("Running job on local embedded Flink flinkMiniCluster cluster")
-
-            jobGraph.getJobConfiguration.addAll(userFlinkClusterConfig)
-
-            // Is passed classloader is ok?
-            val client = flinkMiniClusterHolder.getClusterClient
-            client.setDetached(true)
-            val submissionResult = client.submitJob(jobGraph, getClass.getClassLoader)
-
-            new JobExecutionResult(submissionResult.getJobID, 0, new java.util.HashMap[String, OptionalFailure[AnyRef]]())
-          }
-
-          override def cancel(jobId: JobID): Unit = {
-            flinkMiniClusterHolder.getClusterClient.cancel(jobId)
-          }
-        }
-      }
-    }
-
+    flinkMiniCluster = new Flink19MiniClusterHolder(resource, userFlinkClusterConfig, prepareEnvConfig())
     flinkMiniCluster.start()
   }
 
