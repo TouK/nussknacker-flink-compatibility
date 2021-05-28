@@ -1,7 +1,6 @@
 package pl.touk.nussknacker.compatibility
 
 import java.nio.charset.StandardCharsets
-
 import cats.data.NonEmptyList
 import com.typesafe.config.ConfigValueFactory.fromAnyRef
 import com.typesafe.config.{Config, ConfigFactory}
@@ -10,12 +9,14 @@ import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient
 import io.confluent.kafka.serializers.{KafkaAvroDeserializer, KafkaAvroSerializer}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
+import org.apache.flink.api.common.ExecutionConfig
 import org.scalatest.{EitherValues, FunSuite, Matchers}
 import pl.touk.nussknacker.compatibility.flink19.Flink19Spec
-import pl.touk.nussknacker.engine.api.namespaces.DefaultObjectNaming
+import pl.touk.nussknacker.engine.api.deployment.DeploymentData
 import pl.touk.nussknacker.engine.api.process.ProcessObjectDependencies
-import pl.touk.nussknacker.engine.api.{MetaData, ProcessVersion, StreamMetaData}
+import pl.touk.nussknacker.engine.api.{JobData, MetaData, ProcessVersion, StreamMetaData}
 import pl.touk.nussknacker.engine.avro.encode.{BestEffortAvroEncoder, ValidationMode}
+import pl.touk.nussknacker.engine.avro.kryo.AvroSerializersRegistrar
 import pl.touk.nussknacker.engine.avro.schemaregistry.confluent.client.{CachedConfluentSchemaRegistryClientFactory, ConfluentSchemaRegistryClient, MockSchemaRegistryClient}
 import pl.touk.nussknacker.engine.avro.schemaregistry.confluent.{ConfluentSchemaRegistryProvider, ConfluentUtils}
 import pl.touk.nussknacker.engine.avro.schemaregistry.{ExistingSchemaVersion, LatestSchemaVersion, SchemaRegistryProvider, SchemaVersionOption}
@@ -27,10 +28,12 @@ import pl.touk.nussknacker.engine.graph.exceptionhandler.ExceptionHandlerRef
 import pl.touk.nussknacker.engine.kafka.{KafkaConfig, KafkaSpec, KafkaZookeeperUtils}
 import pl.touk.nussknacker.engine.process.compiler.FlinkProcessCompiler
 import pl.touk.nussknacker.engine.process.ExecutionConfigPreparer
+import pl.touk.nussknacker.engine.process.ExecutionConfigPreparer.{ProcessSettingsPreparer, UnoptimizedSerializationPreparer}
 import pl.touk.nussknacker.engine.process.registrar.FlinkProcessRegistrar
 import pl.touk.nussknacker.engine.spel
 import pl.touk.nussknacker.engine.testing.LocalModelData
 import pl.touk.nussknacker.engine.util.cache.CacheConfig
+import pl.touk.nussknacker.engine.util.namespaces.DefaultNamespacedObjectNaming
 import pl.touk.nussknacker.genericmodel.GenericConfigCreator
 
 class GenericItSpec extends FunSuite with Flink19Spec with Matchers with KafkaSpec with EitherValues with LazyLogging {
@@ -45,8 +48,10 @@ class GenericItSpec extends FunSuite with Flink19Spec with Matchers with KafkaSp
   override lazy val config: Config = ConfigFactory.load()
     .withValue("kafka.kafkaAddress", fromAnyRef(kafkaZookeeperServer.kafkaAddress))
     .withValue("kafka.kafkaProperties.\"schema.registry.url\"", fromAnyRef("not_used"))
+    // we turn off auto registration to do it on our own passing mocked schema registry client
+    .withValue(s"kafka.kafkaEspProperties.${AvroSerializersRegistrar.autoRegisterRecordSchemaIdSerializationProperty}", fromAnyRef(false))
 
-  lazy val mockProcessObjectDependencies: ProcessObjectDependencies = ProcessObjectDependencies(config, DefaultObjectNaming)
+  lazy val mockProcessObjectDependencies: ProcessObjectDependencies = ProcessObjectDependencies(config, DefaultNamespacedObjectNaming)
 
   lazy val kafkaConfig: KafkaConfig = KafkaConfig.parseConfig(config, "kafka")
 
@@ -127,7 +132,7 @@ class GenericItSpec extends FunSuite with Flink19Spec with Matchers with KafkaSp
       .filter("name-filter", "#input.first == 'Jan'")
       .emptySink(
         "end",
-        "kafka-avro",
+        "kafka-avro-raw",
         KafkaAvroBaseTransformer.SinkKeyParamName  -> "",
         KafkaAvroBaseTransformer.SinkValueParamName  -> "#input",
         KafkaAvroBaseTransformer.TopicParamName  -> s"'${topicConfig.output}'",
@@ -149,7 +154,7 @@ class GenericItSpec extends FunSuite with Flink19Spec with Matchers with KafkaSp
       )
       .emptySink(
         "end",
-        "kafka-avro",
+        "kafka-avro-raw",
         KafkaAvroBaseTransformer.SinkKeyParamName -> "",
         KafkaAvroBaseTransformer.SinkValueParamName -> s"{first: #input.first, last: #input.last}",
         KafkaAvroBaseTransformer.TopicParamName -> s"'${topicConfig.output}'",
@@ -331,12 +336,23 @@ class GenericItSpec extends FunSuite with Flink19Spec with Matchers with KafkaSp
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     val modelData = LocalModelData(config, creator)
-    registrar = FlinkProcessRegistrar(new FlinkProcessCompiler(modelData), config, ExecutionConfigPreparer.unOptimizedChain(modelData, None))
+    registrar = FlinkProcessRegistrar(new FlinkProcessCompiler(modelData), executionConfigPreparerChain(modelData))
   }
+
+  protected def executionConfigPreparerChain(modelData: LocalModelData): ExecutionConfigPreparer =
+    ExecutionConfigPreparer.chain(
+      ProcessSettingsPreparer(modelData),
+      new UnoptimizedSerializationPreparer(modelData),
+      new ExecutionConfigPreparer {
+        override def prepareExecutionConfig(config: ExecutionConfig)(jobData: JobData): Unit = {
+          AvroSerializersRegistrar.registerGenericRecordSchemaIdSerializationIfNeed(config, factory, kafkaConfig)
+        }
+      }
+    )
 
   private def run(process: EspProcess)(action: => Unit): Unit = {
     val env = flinkMiniCluster.createExecutionEnvironment()
-    registrar.register(new StreamExecutionEnvironment(env), process, ProcessVersion.empty)
+    registrar.register(new StreamExecutionEnvironment(env), process, ProcessVersion.empty, DeploymentData.empty)
     env.withJobRunning(process.id)(action)
   }
 
