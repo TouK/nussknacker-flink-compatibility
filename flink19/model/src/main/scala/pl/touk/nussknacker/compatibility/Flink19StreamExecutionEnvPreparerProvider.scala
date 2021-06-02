@@ -30,7 +30,7 @@ class Flink19StreamExecutionEnvPreparerProvider extends FlinkCompatibilityProvid
       .orElse(checkpointInterval.map(CheckpointConfig(_)))
     val diskStateBackend = None
     config.getAs[RocksDBStateBackendConfig]("rocksDB")
-      .map(StateConfiguration.prepareRocksDBStateBackend).filter(_ => useDiskState)
+      .filter(_ => useDiskState).map(StateConfiguration.prepareRocksDBStateBackend)
 
     //Flink 1.9 - from Flink 1.10.2 FlinkUserCodeClassLoaders.childFirst has different signature
     new DefaultStreamExecutionEnvPreparer(checkpointConfig, diskStateBackend, executionConfigPreparer) {
