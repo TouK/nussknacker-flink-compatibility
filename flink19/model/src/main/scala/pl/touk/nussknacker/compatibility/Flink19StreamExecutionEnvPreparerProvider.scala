@@ -28,25 +28,29 @@ class Flink19StreamExecutionEnvPreparerProvider extends FlinkCompatibilityProvid
 
     val checkpointConfig = config.getAs[CheckpointConfig](path = "checkpointConfig")
       .orElse(checkpointInterval.map(CheckpointConfig(_)))
-    val diskStateBackend = None
-    config.getAs[RocksDBStateBackendConfig]("rocksDB")
-      .filter(_ => useDiskState).map(StateConfiguration.prepareRocksDBStateBackend)
+    val diskStateBackendConfig = config.getAs[RocksDBStateBackendConfig]("rocksDB").filter(_ => useDiskState)
 
     //Flink 1.9 - from Flink 1.10.2 FlinkUserCodeClassLoaders.childFirst has different signature
-    new DefaultStreamExecutionEnvPreparer(checkpointConfig, diskStateBackend, executionConfigPreparer) {
-      override def flinkClassLoaderSimulation: ClassLoader = {
-        FlinkUserCodeClassLoaders.childFirst(Array.empty,
-          Thread.currentThread().getContextClassLoader, Array.empty)
-      }
-
-      override protected def initializeStateDescriptors(env: StreamExecutionEnvironment): Unit = {
-        val config = env.getConfig
-        //Flink 1.9 getStreamGraph has different signature
-        env.getStreamGraph.getAllOperatorFactory.asScala.toSet[tuple.Tuple2[Integer, StreamOperatorFactory[_]]].map(_.f1).collect {
-          case window: WindowOperator[_, _, _, _, _] => window.getStateDescriptor.initializeSerializerUnlessSet(config)
-        }
-      }
-    }
-
+    new Flink19StreamExecutionEnvPreparer(checkpointConfig, diskStateBackendConfig, executionConfigPreparer)
   }
+
 }
+
+class Flink19StreamExecutionEnvPreparer(checkpointConfig: Option[CheckpointConfig], diskStateBackend: Option[RocksDBStateBackendConfig], executionConfigPreparer: ExecutionConfigPreparer)
+  extends DefaultStreamExecutionEnvPreparer(checkpointConfig, diskStateBackend, executionConfigPreparer) {
+
+  override def flinkClassLoaderSimulation: ClassLoader = {
+    FlinkUserCodeClassLoaders.childFirst(Array.empty,
+      Thread.currentThread().getContextClassLoader, Array.empty)
+  }
+
+  override protected def initializeStateDescriptors(env: StreamExecutionEnvironment): Unit = {
+    val config = env.getConfig
+    //Flink 1.9 getStreamGraph has different signature
+    env.getStreamGraph.getAllOperatorFactory.asScala.toSet[tuple.Tuple2[Integer, StreamOperatorFactory[_]]].map(_.f1).collect {
+      case window: WindowOperator[_, _, _, _, _] => window.getStateDescriptor.initializeSerializerUnlessSet(config)
+    }
+  }
+
+}
+
