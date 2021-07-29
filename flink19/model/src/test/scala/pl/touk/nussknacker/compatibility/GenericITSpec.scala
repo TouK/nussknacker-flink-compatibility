@@ -55,7 +55,7 @@ class GenericItSpec extends FunSuite with Flink19Spec with Matchers with KafkaSp
 
   lazy val kafkaConfig: KafkaConfig = KafkaConfig.parseConfig(config, "kafka")
 
-  lazy val confluentSchemaRegistryClient: ConfluentSchemaRegistryClient = factory.createSchemaRegistryClient(kafkaConfig)
+  lazy val confluentSchemaRegistryClient: ConfluentSchemaRegistryClient = factory.create(kafkaConfig)
 
   val JsonInTopic: String = "name.json.input"
   val JsonOutTopic: String = "name.json.output"
@@ -325,8 +325,11 @@ class GenericItSpec extends FunSuite with Flink19Spec with Matchers with KafkaSp
   }
 
   private lazy val creator: GenericConfigCreator = new GenericConfigCreator {
-    override protected def createSchemaProvider(processObjectDependencies: ProcessObjectDependencies): SchemaRegistryProvider =
-      ConfluentSchemaRegistryProvider(factory, processObjectDependencies)
+    override protected def createAvroSchemaRegistryProvider: SchemaRegistryProvider =
+      ConfluentSchemaRegistryProvider(factory)
+
+    override protected def createJsonSchemaRegistryProvider: SchemaRegistryProvider =
+      ConfluentSchemaRegistryProvider.jsonPayload(factory)
   }
 
   private var registrar: FlinkProcessRegistrar = _
