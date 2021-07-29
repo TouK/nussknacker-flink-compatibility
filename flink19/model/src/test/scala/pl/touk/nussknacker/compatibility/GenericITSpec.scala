@@ -1,6 +1,5 @@
 package pl.touk.nussknacker.compatibility
 
-import java.nio.charset.StandardCharsets
 import cats.data.NonEmptyList
 import com.typesafe.config.ConfigValueFactory.fromAnyRef
 import com.typesafe.config.{Config, ConfigFactory}
@@ -10,9 +9,11 @@ import io.confluent.kafka.serializers.{KafkaAvroDeserializer, KafkaAvroSerialize
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.flink.api.common.ExecutionConfig
+import org.apache.flink.api.common.restartstrategy.RestartStrategies
 import org.scalatest.{EitherValues, FunSuite, Matchers}
 import pl.touk.nussknacker.compatibility.flink19.Flink19Spec
 import pl.touk.nussknacker.engine.api.deployment.DeploymentData
+import pl.touk.nussknacker.engine.api.exception.ExceptionHandlerFactory
 import pl.touk.nussknacker.engine.api.process.ProcessObjectDependencies
 import pl.touk.nussknacker.engine.api.{JobData, MetaData, ProcessVersion, StreamMetaData}
 import pl.touk.nussknacker.engine.avro.encode.{BestEffortAvroEncoder, ValidationMode}
@@ -22,13 +23,13 @@ import pl.touk.nussknacker.engine.avro.schemaregistry.confluent.{ConfluentSchema
 import pl.touk.nussknacker.engine.avro.schemaregistry.{ExistingSchemaVersion, LatestSchemaVersion, SchemaRegistryProvider, SchemaVersionOption}
 import pl.touk.nussknacker.engine.avro.{KafkaAvroBaseTransformer, _}
 import pl.touk.nussknacker.engine.build.{EspProcessBuilder, GraphBuilder}
-import pl.touk.nussknacker.engine.flink.test.FlinkSpec
+import pl.touk.nussknacker.engine.flink.util.exception.ConfigurableExceptionHandler
 import pl.touk.nussknacker.engine.graph.EspProcess
 import pl.touk.nussknacker.engine.graph.exceptionhandler.ExceptionHandlerRef
 import pl.touk.nussknacker.engine.kafka.{KafkaConfig, KafkaSpec, KafkaZookeeperUtils}
-import pl.touk.nussknacker.engine.process.compiler.FlinkProcessCompiler
 import pl.touk.nussknacker.engine.process.ExecutionConfigPreparer
 import pl.touk.nussknacker.engine.process.ExecutionConfigPreparer.{ProcessSettingsPreparer, UnoptimizedSerializationPreparer}
+import pl.touk.nussknacker.engine.process.compiler.FlinkProcessCompiler
 import pl.touk.nussknacker.engine.process.registrar.FlinkProcessRegistrar
 import pl.touk.nussknacker.engine.spel
 import pl.touk.nussknacker.engine.testing.LocalModelData
@@ -36,12 +37,16 @@ import pl.touk.nussknacker.engine.util.cache.CacheConfig
 import pl.touk.nussknacker.engine.util.namespaces.DefaultNamespacedObjectNaming
 import pl.touk.nussknacker.genericmodel.GenericConfigCreator
 
+import java.nio.charset.StandardCharsets
+import scala.concurrent.duration._
+
 class GenericItSpec extends FunSuite with Flink19Spec with Matchers with KafkaSpec with EitherValues with LazyLogging {
 
   import KafkaZookeeperUtils._
   import MockSchemaRegistry._
   import org.apache.flink.streaming.api.scala._
   import spel.Implicits._
+  import net.ceedubs.ficus.Ficus._
 
   private val secondsToWaitForAvro = 30
 
@@ -325,6 +330,19 @@ class GenericItSpec extends FunSuite with Flink19Spec with Matchers with KafkaSp
   }
 
   private lazy val creator: GenericConfigCreator = new GenericConfigCreator {
+
+    override def exceptionHandlerFactory(processObjectDependencies: ProcessObjectDependencies): ExceptionHandlerFactory = {
+      ExceptionHandlerFactory.noParams(new ConfigurableExceptionHandler(_, processObjectDependencies, Thread.currentThread().getContextClassLoader) {
+        // Flink 1.9 doesnt' support configurable restart strategies - only nk exception handling will be configurable
+
+        override def restartStrategy: RestartStrategies.RestartStrategyConfiguration =
+          RestartStrategies.fixedDelayRestart(
+            Integer.MAX_VALUE,
+            processObjectDependencies.config.getOrElse[FiniteDuration]("delayBetweenAttempts", 10.seconds).toMillis
+          )
+      })
+    }
+
     override protected def createAvroSchemaRegistryProvider: SchemaRegistryProvider =
       ConfluentSchemaRegistryProvider(factory)
 
