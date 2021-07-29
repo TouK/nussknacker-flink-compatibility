@@ -260,20 +260,10 @@ class GenericItSpec extends FunSuite with Flink19Spec with Matchers with KafkaSp
       val consumer = kafkaClient.createConsumer().consume(topicOut, secondsToWaitForAvro)
       logger.info("Waiting for messages")
       val processed = consumer.map(_.message()).map(new String(_, StandardCharsets.UTF_8)).take(2).toList
-      processed.map(parseJson) should contain theSameElementsAs List(
-        parseJson(
-          s"""{
-             |  "key" : "key2",
-             |  "$sanitizedBizarreBranchName" : "from source2"
-             |}""".stripMargin
-        ),
-        parseJson(
-          """{
-            |  "key" : "key1",
-            |  "branch1" : "from source1"
-            |}""".stripMargin
-        )
-      )
+      val parsedJsons = processed.map(parseJson)
+      parsedJsons.map(_.hcursor.get[String]("key").right.value) should contain theSameElementsAs List("key1", "key2")
+      parsedJsons.flatMap(_.hcursor.get[Option[String]]("branch1").right.value) should contain theSameElementsAs  List("from source1")
+      parsedJsons.flatMap(_.hcursor.get[Option[String]](sanitizedBizarreBranchName).right.value) should contain theSameElementsAs List("from source2")
     }
   }
 
