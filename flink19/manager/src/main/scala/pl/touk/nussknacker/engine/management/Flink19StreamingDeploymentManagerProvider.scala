@@ -8,7 +8,7 @@ import sttp.client.{NothingT, SttpBackend}
 
 import scala.concurrent.Future
 
-class Flink19StreamingProcessManagerProvider extends FlinkStreamingDeploymentManagerProvider {
+class Flink19StreamingDeploymentManagerProvider extends FlinkStreamingDeploymentManagerProvider {
 
   import net.ceedubs.ficus.readers.ArbitraryTypeReader._
   import net.ceedubs.ficus.Ficus._
