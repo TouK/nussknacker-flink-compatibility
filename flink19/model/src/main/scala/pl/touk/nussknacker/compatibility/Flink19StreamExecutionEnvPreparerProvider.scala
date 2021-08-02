@@ -6,9 +6,12 @@ import org.apache.flink.api.java.tuple
 import org.apache.flink.contrib.streaming.state.{PredefinedOptions, RocksDBStateBackend}
 import org.apache.flink.runtime.execution.librarycache.FlinkUserCodeClassLoaders
 import org.apache.flink.runtime.state.StateBackend
-import org.apache.flink.streaming.api.operators.StreamOperatorFactory
+import org.apache.flink.streaming.api.TimeCharacteristic
+import org.apache.flink.streaming.api.operators.{SimpleOperatorFactory, StreamOperatorFactory}
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
+import org.apache.flink.streaming.runtime.operators.{TimestampsAndPeriodicWatermarksOperator, TimestampsAndPunctuatedWatermarksOperator}
 import org.apache.flink.streaming.runtime.operators.windowing.WindowOperator
+import pl.touk.nussknacker.engine.process.compiler.FlinkProcessCompilerData
 import pl.touk.nussknacker.engine.process.registrar.{DefaultStreamExecutionEnvPreparer, StreamExecutionEnvPreparer}
 import pl.touk.nussknacker.engine.process.util.StateConfiguration.RocksDBStateBackendConfig
 import pl.touk.nussknacker.engine.process.{CheckpointConfig, ExecutionConfigPreparer, FlinkCompatibilityProvider}
@@ -51,6 +54,23 @@ class Flink19StreamExecutionEnvPreparer(checkpointConfig: Option[CheckpointConfi
     //Flink 1.9 getStreamGraph has different signature
     env.getStreamGraph.getAllOperatorFactory.asScala.toSet[tuple.Tuple2[Integer, StreamOperatorFactory[_]]].map(_.f1).collect {
       case window: WindowOperator[_, _, _, _, _] => window.getStateDescriptor.initializeSerializerUnlessSet(config)
+    }
+  }
+
+  override def postRegistration(env: StreamExecutionEnvironment, compiledProcessWithDeps: FlinkProcessCompilerData): Unit = {
+    super.postRegistration(env, compiledProcessWithDeps)
+    val hasWatermarks = env.getStreamGraph.getAllOperatorFactory
+      .asScala.toSet[tuple.Tuple2[Integer, StreamOperatorFactory[_]]].map(_.f1).exists {
+      case factory: SimpleOperatorFactory[_] =>
+        factory.getOperator.isInstanceOf[TimestampsAndPunctuatedWatermarksOperator[_]] || factory.getOperator.isInstanceOf[TimestampsAndPeriodicWatermarksOperator[_]]
+      case _ => false
+    }
+    if (hasWatermarks) {
+      env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
+      logger.info("Watermark assignment detected, using EventTime")
+    } else {
+      env.setStreamTimeCharacteristic(TimeCharacteristic.IngestionTime)
+      logger.info("Watermark assignment not detected, using IngestionTime")
     }
   }
 

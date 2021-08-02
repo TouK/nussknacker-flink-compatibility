@@ -2,13 +2,20 @@ package pl.touk.nussknacker.compatibility
 
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.flink.api.java.tuple
 import org.apache.flink.contrib.streaming.state.{PredefinedOptions, RocksDBStateBackend}
 import org.apache.flink.runtime.execution.librarycache.FlinkUserCodeClassLoaders
 import org.apache.flink.runtime.state.{AbstractStateBackend, StateBackend}
+import org.apache.flink.streaming.api.TimeCharacteristic
+import org.apache.flink.streaming.api.operators.{SimpleOperatorFactory, StreamOperatorFactory}
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
+import org.apache.flink.streaming.runtime.operators.TimestampsAndWatermarksOperator
+import pl.touk.nussknacker.engine.process.compiler.FlinkProcessCompilerData
 import pl.touk.nussknacker.engine.process.registrar.{DefaultStreamExecutionEnvPreparer, StreamExecutionEnvPreparer}
 import pl.touk.nussknacker.engine.process.util.StateConfiguration.RocksDBStateBackendConfig
 import pl.touk.nussknacker.engine.process.{CheckpointConfig, ExecutionConfigPreparer, FlinkCompatibilityProvider}
+
+import scala.jdk.CollectionConverters.asScalaSetConverter
 
 class Flink111StreamExecutionEnvPreparerProvider extends FlinkCompatibilityProvider with LazyLogging {
 
@@ -33,6 +40,22 @@ class Flink111StreamExecutionEnvPreparerProvider extends FlinkCompatibilityProvi
         config.dbStoragePath.foreach(rocksDBStateBackend.setDbStoragePath)
         rocksDBStateBackend.setPredefinedOptions(PredefinedOptions.SPINNING_DISK_OPTIMIZED)
         env.setStateBackend(rocksDBStateBackend: StateBackend)
+      }
+
+      override def postRegistration(env: StreamExecutionEnvironment, compiledProcessWithDeps: FlinkProcessCompilerData): Unit = {
+        super.postRegistration(env, compiledProcessWithDeps)
+        val hasWatermarks = env.getStreamGraph("", clearTransformations = false).getAllOperatorFactory
+          .asScala.toSet[tuple.Tuple2[Integer, StreamOperatorFactory[_]]].map(_.f1).exists {
+          case factory: SimpleOperatorFactory[_] => factory.getOperator.isInstanceOf[TimestampsAndWatermarksOperator[_]]
+          case _ => false
+        }
+        if (hasWatermarks) {
+          env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
+          logger.info("Watermark assignment detected, using EventTime")
+        } else {
+          env.setStreamTimeCharacteristic(TimeCharacteristic.IngestionTime)
+          logger.info("Watermark assignment not detected, using IngestionTime")
+        }
       }
     }
 
