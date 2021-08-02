@@ -5,7 +5,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.java.tuple
 import org.apache.flink.contrib.streaming.state.{PredefinedOptions, RocksDBStateBackend}
 import org.apache.flink.runtime.execution.librarycache.FlinkUserCodeClassLoaders
-import org.apache.flink.runtime.state.{AbstractStateBackend, StateBackend}
+import org.apache.flink.runtime.state.StateBackend
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.operators.{SimpleOperatorFactory, StreamOperatorFactory}
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
