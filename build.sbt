@@ -14,7 +14,7 @@ val silencerV = "1.7.0"
 
 version in ThisBuild := "0.1-SNAPSHOT"
 
-val nussknackerV = "0.3.1-release_0.4-2021-07-29-3261-98beb905c1f71cdf813de5987234f3dea151c675-SNAPSHOT"
+val nussknackerV = "0.5.0-preview_flink_1_12-2021-08-02-3305-9a2c952f63dcc9c68209da87f0b8c8f0550860c2-SNAPSHOT"
 
 val scalaTestV = "3.0.3"
 
@@ -59,6 +59,21 @@ def commonSettings(scalaV: String) =
 
 val flink16V = "1.6.4"
 val flink19V = "1.9.2"
+val flink111V = "1.11.3"
+val currentFlinkV = "1.13.1"
+
+//Here we use Flink version from Nussknacker, in each compatibility provider it will be overridden.
+lazy val commonTest = (project in file("commonTest")).
+  settings(commonSettings(scala212V)).
+  settings(
+    name := "commonTest",
+    libraryDependencies ++= Seq(
+      "pl.touk.nussknacker" %% "nussknacker-generic-model" % nussknackerV,
+      "pl.touk.nussknacker" %% "nussknacker-kafka-test-util" % nussknackerV,
+      "pl.touk.nussknacker" %% "nussknacker-flink-test-util" % nussknackerV,
+      "org.apache.flink" %% "flink-streaming-scala" % currentFlinkV % "provided",
+    )
+  )
 
 lazy val flink19ModelCompat = (project in file("flink19/model")).
   settings(commonSettings(scala212V)).
@@ -69,7 +84,18 @@ lazy val flink19ModelCompat = (project in file("flink19/model")).
       //???
       "org.apache.kafka" % "kafka-clients" % "2.4.1"
     )
-  )
+  ).dependsOn(commonTest % "test")
+
+lazy val flink111ModelCompat = (project in file("flink111/model")).
+  settings(commonSettings(scala212V)).
+  settings(
+    name := "flink111-model",
+    libraryDependencies ++= deps(flink111V),
+    dependencyOverrides ++= flinkOverrides(flink111V) ++ Seq(
+      //???
+      "org.apache.kafka" % "kafka-clients" % "2.4.1"
+    )
+  ).dependsOn(commonTest % "test")
 
 lazy val flink19ManagerCompat = (project in file("flink19/manager")).
   settings(commonSettings(scala212V)).
@@ -105,6 +131,7 @@ def managerDeps(version: String) = Seq(
 
 def deps(version: String) = Seq(
   "org.apache.flink" %% "flink-streaming-scala" % version % "provided",
+  "org.apache.flink" %% "flink-statebackend-rocksdb" % version % "provided",
   "pl.touk.nussknacker" %% "nussknacker-generic-model" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-kafka-test-util" % nussknackerV % "test",
   "pl.touk.nussknacker" %% "nussknacker-flink-test-util" % nussknackerV % "test",

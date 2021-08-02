@@ -7,7 +7,8 @@ import org.apache.flink.runtime.client.JobStatusMessage
 import org.apache.flink.runtime.executiongraph.AccessExecutionGraph
 import org.apache.flink.runtime.jobgraph.{JobGraph, JobStatus}
 import org.apache.flink.test.util.MiniClusterWithClientResource
-import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder
+import org.scalatest.Assertion
+import pl.touk.nussknacker.engine.flink.test.{FlinkMiniClusterHolder, MiniClusterExecutionEnvironment}
 import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder.AdditionalEnvironmentConfig
 
 import java.util.concurrent.CompletableFuture
@@ -16,6 +17,16 @@ import scala.collection.JavaConverters._
 class Flink19MiniClusterHolder(flinkMiniCluster: MiniClusterWithClientResource,
                                protected val userFlinkClusterConfig: Configuration,
                                protected val envConfig: AdditionalEnvironmentConfig) extends FlinkMiniClusterHolder {
+
+
+  override def createExecutionEnvironment(): MiniClusterExecutionEnvironment = {
+    new MiniClusterExecutionEnvironment(this, userFlinkClusterConfig, envConfig) {
+      //No INITIALIZING state in Flink < 1.12
+      override protected def assertJobInitialized(executionGraph: AccessExecutionGraph): Assertion = {
+        assert(true)
+      }
+    }
+  }
 
   override def start(): Unit = {
     flinkMiniCluster.before()
