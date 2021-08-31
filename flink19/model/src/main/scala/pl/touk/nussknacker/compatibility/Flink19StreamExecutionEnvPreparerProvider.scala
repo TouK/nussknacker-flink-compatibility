@@ -75,7 +75,8 @@ class Flink19StreamExecutionEnvPreparer(checkpointConfig: Option[CheckpointConfi
   }
 
   override protected def configureRocksDBBackend(env: StreamExecutionEnvironment, config: RocksDBStateBackendConfig): Unit = {
-    val rocksDBStateBackend = new RocksDBStateBackend(config.checkpointDataUri, config.incrementalCheckpoints)
+    val checkpointDataUri = config.checkpointDataUri.getOrElse(throw new IllegalArgumentException("To enable rocksdb state backend, rocksdb.checkpointDataUri must be configured"))
+    val rocksDBStateBackend = new RocksDBStateBackend(checkpointDataUri, config.incrementalCheckpoints)
     config.dbStoragePath.foreach(rocksDBStateBackend.setDbStoragePath)
     rocksDBStateBackend.setPredefinedOptions(PredefinedOptions.SPINNING_DISK_OPTIMIZED)
     env.setStateBackend(rocksDBStateBackend: StateBackend)
