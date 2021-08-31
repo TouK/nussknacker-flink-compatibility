@@ -36,7 +36,8 @@ class Flink111StreamExecutionEnvPreparerProvider extends FlinkCompatibilityProvi
 
       //Flink 1.11 - from Flink 1.13.0 introduction of EmbeddedRocksDBStateBackend class
       override protected def configureRocksDBBackend(env: StreamExecutionEnvironment, config: RocksDBStateBackendConfig): Unit = {
-        val rocksDBStateBackend = new RocksDBStateBackend(config.checkpointDataUri, config.incrementalCheckpoints)
+        val checkpointDataUri = config.checkpointDataUri.getOrElse(throw new IllegalArgumentException("To enable rocksdb state backend, rocksDB.checkpointDataUri must be configured"))
+        val rocksDBStateBackend = new RocksDBStateBackend(checkpointDataUri, config.incrementalCheckpoints)
         config.dbStoragePath.foreach(rocksDBStateBackend.setDbStoragePath)
         rocksDBStateBackend.setPredefinedOptions(PredefinedOptions.SPINNING_DISK_OPTIMIZED)
         env.setStateBackend(rocksDBStateBackend: StateBackend)

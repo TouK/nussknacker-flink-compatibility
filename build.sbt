@@ -2,7 +2,6 @@ import sbt.Keys._
 import sbtassembly.AssemblyPlugin.autoImport.assembly
 import sbtassembly.{MergeStrategy, PathList}
 
-val scala211V = "2.11.12"
 val scala212V = "2.12.10"
 
 val scalaCollectionsCompatV = "2.1.6"
@@ -12,9 +11,9 @@ val scalaCollectionsCompatV = "2.1.6"
 val silencerV_2_12 = "1.6.0"
 val silencerV = "1.7.0"
 
-version in ThisBuild := "0.1-SNAPSHOT"
+ThisBuild / version := "0.1-SNAPSHOT"
 
-val nussknackerV = "0.5.0-preview_flink_1_12-2021-08-02-3305-9a2c952f63dcc9c68209da87f0b8c8f0550860c2-SNAPSHOT"
+val nussknackerV = "0.5.0-staging-2021-08-31-3704-cca8fe6d5dabf06e14f6c5d3bf43e238a12b6598-SNAPSHOT"
 
 val scalaTestV = "3.0.3"
 
@@ -52,12 +51,11 @@ def commonSettings(scalaV: String) =
       }) % Provided cross CrossVersion.full,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionsCompatV
     ),
-    assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, level = Level.Info),
-    assemblyMergeStrategy in assembly := nussknackerAssemblyStrategy,
-    assemblyJarName in assembly := s"${name.value}-assembly.jar"
+    assembly / assemblyOption := (assembly / assemblyOption).value.copy(includeScala = false, level = Level.Info),
+    assembly / assemblyMergeStrategy := nussknackerAssemblyStrategy,
+    assembly / assemblyJarName := s"${name.value}-assembly.jar"
   )
 
-val flink16V = "1.6.4"
 val flink19V = "1.9.2"
 val flink111V = "1.11.3"
 val currentFlinkV = "1.13.1"
@@ -106,14 +104,6 @@ lazy val flink19ManagerCompat = (project in file("flink19/manager")).
       //???
       "org.apache.kafka" % "kafka-clients" % "2.4.1"
     )
-  )
-
-lazy val flink16TestUtilCompat = (project in file("flink16/test-util")).
-  settings(commonSettings(scala211V)).
-  settings(
-    name := "flink16-test-util",
-    libraryDependencies ++= testUtilDeps(flink16V),
-    dependencyOverrides ++= flinkOverrides(flink16V)
   )
 
 def managerDeps(version: String) = Seq(

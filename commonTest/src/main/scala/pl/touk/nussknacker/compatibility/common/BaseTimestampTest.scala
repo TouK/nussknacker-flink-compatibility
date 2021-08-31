@@ -2,6 +2,7 @@ package pl.touk.nussknacker.compatibility.common
 
 import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory.fromAnyRef
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.common.restartstrategy.RestartStrategies
@@ -67,7 +68,7 @@ trait BaseTimestampTest extends FunSuiteLike with BeforeAndAfterAll with BeforeA
 
     val creator = new TestCreator(assigner)
 
-    val modelData = LocalModelData(ConfigFactory.load(), creator)
+    val modelData = LocalModelData(prepareConfig, creator)
     val env = flinkMiniCluster.createExecutionEnvironment()
     val registrar = FlinkProcessRegistrar(new FlinkProcessCompiler(modelData), ExecutionConfigPreparer.unOptimizedChain(modelData))
     registrar.register(new StreamExecutionEnvironment(env), process, ProcessVersion.empty, DeploymentData.empty)
@@ -75,6 +76,11 @@ trait BaseTimestampTest extends FunSuiteLike with BeforeAndAfterAll with BeforeA
 
   }
 
+  private def prepareConfig = {
+    ConfigFactory.load()
+      .withValue("kafka.kafkaAddress", fromAnyRef("not_used"))
+      .withValue("rocksDB.checkpointDataUri", fromAnyRef("file:///tmp/rocksDBCheckpointDataUri"))
+  }
 }
 
 @silent("deprecated")
