@@ -30,11 +30,11 @@ trait DockerTest extends DockerTestKit with ScalaFutures with Eventually with La
 
   final override implicit def patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(2, Minutes)), interval = scaled(Span(100, Millis)))
 
-  private val flinkEsp = s"flinkesp:1.10.0-scala_${ScalaMajorVersionConfig.scalaMajorVersion}"
+  private val flinkEsp = s"flinkesp:1.11.2-scala_${ScalaMajorVersionConfig.scalaMajorVersion}"
 
   private val client: DockerClient = DefaultDockerClient.fromEnv().build()
 
-  protected val userToAct = User("testUser", "Test User")
+  protected val userToAct: User = User("testUser", "Test User")
 
   override implicit val dockerFactory: DockerFactory = new SpotifyDockerFactory(client)
 
@@ -43,7 +43,7 @@ trait DockerTest extends DockerTestKit with ScalaFutures with Eventually with La
     val dir = Files.createTempDirectory("forDockerfile")
     val dirFile = dir.toFile
 
-    List("Dockerfile", "entrypointWithIP.sh", "conf.yml", "docker-entrypoint.sh").foreach { file =>
+    List("Dockerfile", "entrypointWithIP.sh", "conf.yml").foreach { file =>
       val resource = IOUtils.toString(getClass.getResourceAsStream(s"/docker/$file"))
       val withVersionReplaced = resource.replace("${scala.major.version}", ScalaMajorVersionConfig.scalaMajorVersion)
       FileUtils.writeStringToFile(new File(dirFile, file), withVersionReplaced)
@@ -54,7 +54,6 @@ trait DockerTest extends DockerTestKit with ScalaFutures with Eventually with La
 
   prepareDockerImage()
 
-  val KafkaPort = 9092
   val ZookeeperDefaultPort = 2181
   val FlinkJobManagerRestPort = 8081
   val taskManagerSlotCount = 8
@@ -68,7 +67,7 @@ trait DockerTest extends DockerTestKit with ScalaFutures with Eventually with La
     val savepointDir = prepareVolumeDir()
     baseFlink("jobmanager")
       .withCommand("jobmanager")
-      .withEnv("JOB_MANAGER_RPC_ADDRESS_COMMAND=grep $HOSTNAME /etc/hosts | awk '{print $1}'", s"SAVEPOINT_DIR_NAME=${savepointDir.getFileName}")
+      .withEnv(s"SAVEPOINT_DIR_NAME=${savepointDir.getFileName}")
       .withReadyChecker(DockerReadyChecker.LogLineContains("Recover all persisted job graphs").looped(5, 1 second))
       .withLinks(ContainerLink(zookeeperContainer, "zookeeper"))
       .withVolumes(List(VolumeMapping(savepointDir.toString, savepointDir.toString, rw = true)))

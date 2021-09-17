@@ -18,41 +18,15 @@ import scala.concurrent.duration._
 
 trait StreamingDockerTest extends DockerTest with Matchers { self: Suite =>
 
-  protected var kafkaClient: KafkaClient = _
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    kafkaClient = new KafkaClient(kafkaAddress, s"${ipOfContainer(zookeeperContainer)}:$ZookeeperDefaultPort", self.suiteName)
-  }
-
-  override def afterAll(): Unit = {
-    kafkaClient.shutdown()
-    super.afterAll()
-  }
-
-  lazy val kafkaContainer: DockerContainer = DockerContainer("wurstmeister/kafka:1.0.1", name = Some("kafka"))
-    .withEnv(s"KAFKA_ADVERTISED_PORT=$KafkaPort",
-      s"KAFKA_ZOOKEEPER_CONNECT=zookeeper:$ZookeeperDefaultPort",
-      "KAFKA_BROKER_ID=0",
-      "HOSTNAME_COMMAND=grep $HOSTNAME /etc/hosts | awk '{print $1}'")
-    .withLinks(ContainerLink(zookeeperContainer, "zookeeper"))
-    .withReadyChecker(DockerReadyChecker.LogLineContains("started (kafka.server.KafkaServer)").looped(5, 1 second))
-
-  lazy val taskManagerContainer: DockerContainer = buildTaskManagerContainer(additionalLinks = List(ContainerLink(kafkaContainer, "kafka")))
+  lazy val taskManagerContainer: DockerContainer = buildTaskManagerContainer()
 
   abstract override def dockerContainers: List[DockerContainer] = {
     List(
       zookeeperContainer,
-      kafkaContainer,
       jobManagerContainer,
       taskManagerContainer
     ) ++ super.dockerContainers
   }
-
-  override protected def additionalConfig: Config = ConfigFactory.empty()
-    .withValue("modelConfig.kafka.kafkaAddress", fromAnyRef(kafkaAddress))
-
-  private def kafkaAddress = s"${ipOfContainer(kafkaContainer)}:$KafkaPort"
 
   protected lazy val deploymentManager: DeploymentManager = {
     val typeConfig = ProcessingTypeConfig.read(config)
@@ -61,7 +35,6 @@ trait StreamingDockerTest extends DockerTest with Matchers { self: Suite =>
 
   protected def deployProcessAndWaitIfRunning(process: EspProcess, processVersion: ProcessVersion, savepointPath : Option[String] = None): Assertion = {
     deployProcess(process, processVersion, savepointPath)
-    logger.info("WAIT START?")
 
     eventually {
       val jobStatus = deploymentManager.findJobStatus(ProcessName(process.id)).futureValue
