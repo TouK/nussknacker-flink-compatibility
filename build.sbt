@@ -13,7 +13,7 @@ val silencerV = "1.7.0"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val nussknackerV = "0.5.0-staging-2021-09-05-3843-48f5f7c42c2e1e6b1602baf0a202336e1e52abb8-SNAPSHOT"
+val nussknackerV = "1.0.0-preview_flink_111_compat-2021-09-16-4097-08c8d67819c1df2b2c34b9225ed9297bbc2ace70-SNAPSHOT"
 
 val scalaTestV = "3.0.3"
 
@@ -53,12 +53,14 @@ def commonSettings(scalaV: String) =
     ),
     assembly / assemblyOption := (assembly / assemblyOption).value.copy(includeScala = false, level = Level.Info),
     assembly / assemblyMergeStrategy := nussknackerAssemblyStrategy,
-    assembly / assemblyJarName := s"${name.value}-assembly.jar"
+    assembly / assemblyJarName := s"${name.value}-assembly.jar",
+    assembly / test := {}
   )
 
 val flink19V = "1.9.2"
 val flink111V = "1.11.3"
 val currentFlinkV = "1.13.1"
+val circeV = "0.11.2"
 
 //Here we use Flink version from Nussknacker, in each compatibility provider it will be overridden.
 lazy val commonTest = (project in file("commonTest")).
@@ -91,9 +93,28 @@ lazy val flink111ModelCompat = (project in file("flink111/model")).
     libraryDependencies ++= deps(flink111V),
     dependencyOverrides ++= flinkOverrides(flink111V) ++ Seq(
       //???
-      "org.apache.kafka" % "kafka-clients" % "2.4.1"
+      "org.apache.kafka" % "kafka-clients" % "2.4.1",
     )
   ).dependsOn(commonTest % "test")
+
+lazy val flink111ManagerCompat = (project in file("flink111/manager")).
+  settings(commonSettings(scala212V)).
+  configs(IntegrationTest).
+  settings(Defaults.itSettings).
+  settings(
+    name := "flink111-manager",
+    libraryDependencies ++= managerDeps(flink111V),
+    dependencyOverrides ++= flinkOverrides(flink111V) ++ Seq(
+      //For some strange reason, docker client libraries have conflict with schema registry client :/
+      "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
+      //???
+      "org.apache.kafka" % "kafka-clients" % "2.4.1"
+    ),
+    IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
+      flink111ModelCompat / Compile / assembly
+    ).value,
+  ).dependsOn(commonTest % "test")
+
 
 lazy val flink19ManagerCompat = (project in file("flink19/manager")).
   settings(commonSettings(scala212V)).
@@ -108,21 +129,23 @@ lazy val flink19ManagerCompat = (project in file("flink19/manager")).
 
 def managerDeps(version: String) = Seq(
   "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV,
-  "pl.touk.nussknacker" %% "nussknacker-http-utils" % nussknackerV % "provided",
-  "pl.touk.nussknacker" %% "nussknacker-interpreter" % nussknackerV % "provided",
+  "pl.touk.nussknacker" %% "nussknacker-http-utils" % nussknackerV,// % "provided,it,test",
+  "pl.touk.nussknacker" %% "nussknacker-interpreter" % nussknackerV,// % "provided,it,test",
+  "pl.touk.nussknacker" %% "nussknacker-kafka-test-util" % nussknackerV % "it,test",
   "org.apache.flink" %% "flink-streaming-scala" % version excludeAll(
     ExclusionRule("log4j", "log4j"),
     ExclusionRule("org.slf4j", "slf4j-log4j12")
   ),
-  //TODO: integrations test with docker
-  //"com.whisk" %% "docker-testkit-scalatest" % "0.9.0" % "it,test",
-  //"com.whisk" %% "docker-testkit-impl-spotify" % "0.9.0" % "it,test"
+  "com.whisk" %% "docker-testkit-scalatest" % "0.9.0" % "it,test",
+  "com.whisk" %% "docker-testkit-impl-spotify" % "0.9.0" % "it,test",
 )
 
 def deps(version: String) = Seq(
   "org.apache.flink" %% "flink-streaming-scala" % version % "provided",
   "org.apache.flink" %% "flink-statebackend-rocksdb" % version % "provided",
   "pl.touk.nussknacker" %% "nussknacker-generic-model" % nussknackerV,
+  "pl.touk.nussknacker" %% "nussknacker-process" % nussknackerV,
+
   "pl.touk.nussknacker" %% "nussknacker-kafka-test-util" % nussknackerV % "test",
   "pl.touk.nussknacker" %% "nussknacker-flink-test-util" % nussknackerV % "test",
   "org.apache.flink" %% "flink-streaming-scala" % version % "test",
@@ -139,7 +162,13 @@ def flinkOverrides(version: String) = Seq(
   "org.apache.flink" %% "flink-runtime" % version % "provided",
   "org.apache.flink" %% "flink-connector-kafka" % version % "provided",
   "org.apache.flink" %% "flink-test-utils" % version % "test",
-  "org.apache.flink" % "flink-metrics-dropwizard" % version % "test")
+  "org.apache.flink" % "flink-metrics-dropwizard" % version % "test",
+
+  //we force circe version here, because sttp has 0.12.1 for scala 2.12, we don't want it ATM
+  "io.circe" %% "circe-core" % circeV,
+  "io.circe" %% "circe-parser" % circeV,
+
+)
 
 
 def nussknackerAssemblyStrategy: String => MergeStrategy = {
