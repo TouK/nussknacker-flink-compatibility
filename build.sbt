@@ -13,7 +13,7 @@ val silencerV = "1.7.0"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val nussknackerV = "1.0.0-preview_flink_111_compat-2021-09-16-4097-08c8d67819c1df2b2c34b9225ed9297bbc2ace70-SNAPSHOT"
+val nussknackerV = "1.0.0"
 
 val scalaTestV = "3.0.3"
 
@@ -107,7 +107,6 @@ lazy val flink111ManagerCompat = (project in file("flink111/manager")).
     dependencyOverrides ++= flinkOverrides(flink111V) ++ Seq(
       //For some strange reason, docker client libraries have conflict with schema registry client :/
       "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
-      //???
       "org.apache.kafka" % "kafka-clients" % "2.4.1"
     ),
     IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
@@ -122,15 +121,14 @@ lazy val flink19ManagerCompat = (project in file("flink19/manager")).
     name := "flink19-manager",
     libraryDependencies ++= managerDeps(flink19V),
     dependencyOverrides ++= flinkOverrides(flink19V) ++ Seq(
-      //???
       "org.apache.kafka" % "kafka-clients" % "2.4.1"
     )
   )
 
 def managerDeps(version: String) = Seq(
   "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV,
-  "pl.touk.nussknacker" %% "nussknacker-http-utils" % nussknackerV,// % "provided,it,test",
-  "pl.touk.nussknacker" %% "nussknacker-interpreter" % nussknackerV,// % "provided,it,test",
+  "pl.touk.nussknacker" %% "nussknacker-http-utils" % nussknackerV % "provided,it,test",
+  "pl.touk.nussknacker" %% "nussknacker-interpreter" % nussknackerV % "provided,it,test",
   "pl.touk.nussknacker" %% "nussknacker-kafka-test-util" % nussknackerV % "it,test",
   "org.apache.flink" %% "flink-streaming-scala" % version excludeAll(
     ExclusionRule("log4j", "log4j"),
