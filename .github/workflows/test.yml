@@ -19,4 +19,4 @@ jobs:
         with:
           java-version: "openjdk@1.11"
       - name: Tests
-        run: sbt test
+        run: sbt test it:test
