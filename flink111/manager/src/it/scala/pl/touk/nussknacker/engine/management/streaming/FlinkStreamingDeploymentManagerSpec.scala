@@ -2,7 +2,7 @@ package pl.touk.nussknacker.engine.management.streaming
 
 import org.scalatest.{FunSuite, Matchers}
 import pl.touk.nussknacker.engine.api.ProcessVersion
-import pl.touk.nussknacker.engine.api.process.ProcessName
+import pl.touk.nussknacker.engine.api.process.{ProcessId, ProcessName, VersionId}
 import pl.touk.nussknacker.engine.build.EspProcessBuilder
 import pl.touk.nussknacker.engine.graph.EspProcess
 import pl.touk.nussknacker.engine.util.config.ScalaMajorVersionConfig
@@ -15,7 +15,7 @@ class FlinkStreamingDeploymentManagerSpec extends FunSuite with Matchers with St
   test("deploy scenario in running flink") {
     val processId = "runningFlink"
 
-    val version = ProcessVersion(15, ProcessName(processId), "user1", Some(13))
+    val version = ProcessVersion(VersionId(15), ProcessName(processId), ProcessId(1), "user1", Some(13))
     val process = prepareProcess(processId, Some(1))
 
     deployProcessAndWaitIfRunning(process, version)
