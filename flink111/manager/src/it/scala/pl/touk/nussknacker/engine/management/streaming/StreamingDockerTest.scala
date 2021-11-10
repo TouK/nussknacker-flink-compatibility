@@ -1,8 +1,8 @@
 package pl.touk.nussknacker.engine.management.streaming
 
-import com.typesafe.config.ConfigValueFactory.fromAnyRef
-import com.typesafe.config.{Config, ConfigFactory}
-import com.whisk.docker.{ContainerLink, DockerContainer, DockerReadyChecker}
+import akka.actor.ActorSystem
+import com.whisk.docker.DockerContainer
+import org.asynchttpclient.DefaultAsyncHttpClientConfig
 import org.scalatest.{Assertion, Matchers, Suite}
 import pl.touk.nussknacker.engine.ProcessingTypeConfig
 import pl.touk.nussknacker.engine.api.ProcessVersion
@@ -10,15 +10,20 @@ import pl.touk.nussknacker.engine.api.deployment.{DeploymentData, DeploymentMana
 import pl.touk.nussknacker.engine.api.process.ProcessName
 import pl.touk.nussknacker.engine.canonize.ProcessCanonizer
 import pl.touk.nussknacker.engine.graph.EspProcess
-import pl.touk.nussknacker.engine.kafka.KafkaClient
-import pl.touk.nussknacker.engine.management.{DockerTest, Flink111StreamingDeploymentManagerProvider, FlinkStateStatus, FlinkStreamingDeploymentManagerProvider}
+import pl.touk.nussknacker.engine.management.{DockerTest, Flink111StreamingDeploymentManagerProvider, FlinkStateStatus}
 import pl.touk.nussknacker.engine.marshall.ProcessMarshaller
+import sttp.client.asynchttpclient.future.AsyncHttpClientFutureBackend
+import sttp.client.{NothingT, SttpBackend}
 
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 
-trait StreamingDockerTest extends DockerTest with Matchers { self: Suite =>
+trait StreamingDockerTest extends DockerTest with Matchers {
+  self: Suite =>
 
   lazy val taskManagerContainer: DockerContainer = buildTaskManagerContainer()
+  private implicit val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
+  implicit val backend: SttpBackend[Future, Nothing, NothingT] = AsyncHttpClientFutureBackend.usingConfig(new DefaultAsyncHttpClientConfig.Builder().build())
 
   abstract override def dockerContainers: List[DockerContainer] = {
     List(
@@ -33,7 +38,7 @@ trait StreamingDockerTest extends DockerTest with Matchers { self: Suite =>
     new Flink111StreamingDeploymentManagerProvider().createDeploymentManager(typeConfig.toModelData, typeConfig.deploymentConfig)
   }
 
-  protected def deployProcessAndWaitIfRunning(process: EspProcess, processVersion: ProcessVersion, savepointPath : Option[String] = None): Assertion = {
+  protected def deployProcessAndWaitIfRunning(process: EspProcess, processVersion: ProcessVersion, savepointPath: Option[String] = None): Assertion = {
     deployProcess(process, processVersion, savepointPath)
 
     eventually {
@@ -45,7 +50,7 @@ trait StreamingDockerTest extends DockerTest with Matchers { self: Suite =>
     }
   }
 
-  protected def deployProcess(process: EspProcess, processVersion: ProcessVersion, savepointPath : Option[String] = None): Assertion = {
+  protected def deployProcess(process: EspProcess, processVersion: ProcessVersion, savepointPath: Option[String] = None): Assertion = {
     val marshaled = ProcessMarshaller.toJson(ProcessCanonizer.canonize(process)).spaces2
     assert(deploymentManager.deploy(processVersion, DeploymentData.empty, GraphProcess(marshaled), savepointPath).isReadyWithin(100 seconds))
   }

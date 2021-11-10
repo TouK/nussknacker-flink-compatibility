@@ -13,7 +13,7 @@ val silencerV = "1.7.0"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val nussknackerV = "1.0.1-preview_flink_1_14-2021-10-06-4567-f3d22e606f53729cd4bbb1f224da5584112209e8-SNAPSHOT"
+val nussknackerV = "1.0.1-release_1.1-2021-11-10-5289-593cb002305397e23e1fa8b79b1e93698defcfcc-SNAPSHOT"
 
 val scalaTestV = "3.0.3"
 
@@ -60,6 +60,7 @@ def commonSettings(scalaV: String) =
 val flink111V = "1.11.3"
 val flink113V = "1.13.3"
 val currentFlinkV = "1.14.0"
+val sttpV = "2.2.9"
 
 //Here we use Flink version from Nussknacker, in each compatibility provider it will be overridden.
 lazy val commonTest = (project in file("commonTest")).
@@ -108,6 +109,8 @@ def managerDeps(version: String) = Seq(
   "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-http-utils" % nussknackerV % "provided,it,test",
   "pl.touk.nussknacker" %% "nussknacker-interpreter" % nussknackerV % "provided,it,test",
+  "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV,
+
   "pl.touk.nussknacker" %% "nussknacker-kafka-test-util" % nussknackerV % "it,test",
   "org.apache.flink" %% "flink-streaming-scala" % version excludeAll(
     ExclusionRule("log4j", "log4j"),
@@ -115,6 +118,7 @@ def managerDeps(version: String) = Seq(
   ),
   "com.whisk" %% "docker-testkit-scalatest" % "0.9.0" % "it,test",
   "com.whisk" %% "docker-testkit-impl-spotify" % "0.9.0" % "it,test",
+  "com.softwaremill.sttp.client" %% "async-http-client-backend-future" % sttpV,
 )
 
 val flinkExclusionsForBefore1_14 = Seq(
@@ -128,7 +132,8 @@ def deps(version: String) = Seq(
   "org.apache.flink" %% "flink-streaming-scala" % version % "provided",
   "org.apache.flink" %% "flink-statebackend-rocksdb" % version % "provided",
   "pl.touk.nussknacker" %% "nussknacker-generic-model" % nussknackerV,
-  "pl.touk.nussknacker" %% "nussknacker-process" % nussknackerV,
+  "pl.touk.nussknacker" %% "nussknacker-base-components" % nussknackerV,
+  "pl.touk.nussknacker" %% "nussknacker-flink-engine" % nussknackerV,
 
   "pl.touk.nussknacker" %% "nussknacker-kafka-test-util" % nussknackerV % "test",
   "pl.touk.nussknacker" %% "nussknacker-flink-test-util" % nussknackerV % "test",
@@ -162,7 +167,7 @@ def nussknackerAssemblyStrategy: String => MergeStrategy = {
   case PathList(ps@_*) if ps.last == "mimetypes.default" => MergeStrategy.first
   case PathList(ps@_*) if ps.last == "module-info.class" => MergeStrategy.first
   case PathList("org", "apache", "commons", "collections", ps) if ps.contains("FastHashMap") || ps == "ArrayStack.class" => MergeStrategy.first
-  case PathList(ps@_*) if ps.last == "MetricUtils.class" => MergeStrategy.first
+  case PathList(ps@_*) if ps.last == "FlinkMetricsProviderForScenario.class" => MergeStrategy.first
 
   case x => MergeStrategy.defaultMergeStrategy(x)
 }

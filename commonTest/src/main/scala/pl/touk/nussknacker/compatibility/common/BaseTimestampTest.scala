@@ -11,7 +11,6 @@ import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironm
 import org.apache.flink.streaming.api.watermark.Watermark
 import org.apache.flink.util.Collector
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuiteLike, Matchers}
-import pl.touk.nussknacker.engine.api
 import pl.touk.nussknacker.engine.api._
 import pl.touk.nussknacker.engine.api.deployment.DeploymentData
 import pl.touk.nussknacker.engine.api.exception.ExceptionHandlerFactory
@@ -29,6 +28,7 @@ import pl.touk.nussknacker.engine.process.helpers.SampleNodes.SinkForLongs
 import pl.touk.nussknacker.engine.process.registrar.FlinkProcessRegistrar
 import pl.touk.nussknacker.engine.testing.LocalModelData
 import pl.touk.nussknacker.engine.util.process.EmptyProcessConfigCreator
+import pl.touk.nussknacker.engine.{api, spel}
 import pl.touk.nussknacker.test.VeryPatientScalaFutures
 
 import scala.annotation.nowarn
@@ -59,12 +59,13 @@ trait BaseTimestampTest extends FunSuiteLike with BeforeAndAfterAll with BeforeA
   }
 
   private def runWithAssigner(assigner: Option[TimestampWatermarkHandler[String]]) = {
+    import spel.Implicits._
     val process = EspProcessBuilder.id("timestamps")
       .parallelism(1)
       .exceptionHandler()
       .source("source", "source")
       .customNode("custom", "output", "check")
-      .emptySink("log", "log")
+      .emptySink("log", "log", "value" -> "#output")
 
     val creator = new TestCreator(assigner)
 
@@ -96,7 +97,7 @@ class TestCreator(assigner: Option[TimestampWatermarkHandler[String]]) extends E
   override def sourceFactories(processObjectDependencies: ProcessObjectDependencies): Map[String, WithCategories[SourceFactory[_]]] = {
     Map("source" -> WithCategories(FlinkSourceFactory.noParam(
       new CollectionSource[String](new ExecutionConfig, List(""), assigner, Typed[String]))))
-  }                                                        
+  }
 
 
   override def customStreamTransformers(processObjectDependencies: ProcessObjectDependencies): Map[String, WithCategories[CustomStreamTransformer]] = {
@@ -104,7 +105,7 @@ class TestCreator(assigner: Option[TimestampWatermarkHandler[String]]) extends E
   }
 
   override def sinkFactories(processObjectDependencies: ProcessObjectDependencies): Map[String, WithCategories[SinkFactory]] = {
-    Map("log" -> WithCategories(SinkFactory.noParam(SinkForLongs)))
+    Map("log" -> WithCategories(SinkForLongs.toSourceFactory))
   }
 
   override def exceptionHandlerFactory(processObjectDependencies: ProcessObjectDependencies): ExceptionHandlerFactory = {
