@@ -17,7 +17,7 @@ import pl.touk.nussknacker.engine.api.exception.ExceptionHandlerFactory
 import pl.touk.nussknacker.engine.api.process.{ProcessObjectDependencies, SinkFactory, SourceFactory, WithCategories}
 import pl.touk.nussknacker.engine.api.typed.typing.Typed
 import pl.touk.nussknacker.engine.build.EspProcessBuilder
-import pl.touk.nussknacker.engine.flink.api.process.{FlinkCustomNodeContext, FlinkCustomStreamTransformation, FlinkSourceFactory}
+import pl.touk.nussknacker.engine.flink.api.process.{FlinkCustomNodeContext, FlinkCustomStreamTransformation}
 import pl.touk.nussknacker.engine.flink.api.timestampwatermark.{LegacyTimestampWatermarkHandler, TimestampWatermarkHandler}
 import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder
 import pl.touk.nussknacker.engine.flink.util.exception.ConfigurableExceptionHandler
@@ -94,8 +94,8 @@ class FixedWatermarks(customFixedTime: Long) extends AssignerWithPunctuatedWater
 
 class TestCreator(assigner: Option[TimestampWatermarkHandler[String]]) extends EmptyProcessConfigCreator {
 
-  override def sourceFactories(processObjectDependencies: ProcessObjectDependencies): Map[String, WithCategories[SourceFactory[_]]] = {
-    Map("source" -> WithCategories(FlinkSourceFactory.noParam(
+  override def sourceFactories(processObjectDependencies: ProcessObjectDependencies): Map[String, WithCategories[SourceFactory]] = {
+    Map("source" -> WithCategories(SourceFactory.noParam[String](
       new CollectionSource[String](new ExecutionConfig, List(""), assigner, Typed[String]))))
   }
 
@@ -105,7 +105,7 @@ class TestCreator(assigner: Option[TimestampWatermarkHandler[String]]) extends E
   }
 
   override def sinkFactories(processObjectDependencies: ProcessObjectDependencies): Map[String, WithCategories[SinkFactory]] = {
-    Map("log" -> WithCategories(SinkForLongs.toSourceFactory))
+    Map("log" -> WithCategories(SinkForLongs.toSinkFactory))
   }
 
   override def exceptionHandlerFactory(processObjectDependencies: ProcessObjectDependencies): ExceptionHandlerFactory = {
