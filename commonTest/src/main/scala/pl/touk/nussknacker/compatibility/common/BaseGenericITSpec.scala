@@ -60,6 +60,9 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with E
 
   override lazy val config: Config = ConfigFactory.load()
     .withValue("kafka.kafkaAddress", fromAnyRef(kafkaZookeeperServer.kafkaAddress))
+    .withValue("components.kafka.disabled", fromAnyRef(true))
+    .withValue("components.mockKafka.disabled", fromAnyRef(false))
+
     .withValue("kafka.kafkaProperties.\"schema.registry.url\"", fromAnyRef("not_used"))
     // we turn off auto registration to do it on our own passing mocked schema registry client
     .withValue(s"kafka.kafkaEspProperties.${AvroSerializersRegistrar.autoRegisterRecordSchemaIdSerializationProperty}", fromAnyRef(false))
@@ -135,7 +138,7 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with E
             |}""".stripMargin
       )
       .filter("name-filter", filter)
-      .sink("end", "#input", "kafka-json", "topic" -> s"'$JsonOutTopic'")
+      .emptySink("end",  "kafka-json", "topic" -> s"'$JsonOutTopic'", "value" -> "#input")
 
   private def jsonSchemedProcess(topicConfig: TopicConfig, versionOption: SchemaVersionOption, validationMode: ValidationMode = ValidationMode.strict) =
     EspProcessBuilder
@@ -145,18 +148,18 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with E
       .source(
         "start",
         "kafka-registry-typed-json",
-        KafkaAvroBaseTransformer.TopicParamName -> s"'${topicConfig.input}'",
-        KafkaAvroBaseTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
+        KafkaAvroBaseComponentTransformer.TopicParamName -> s"'${topicConfig.input}'",
+        KafkaAvroBaseComponentTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
       )
       .filter("name-filter", "#input.first == 'Jan'")
       .emptySink(
         "end",
         "kafka-registry-typed-json-raw",
-        KafkaAvroBaseTransformer.SinkKeyParamName -> "",
-        KafkaAvroBaseTransformer.SinkValueParamName -> "#input",
-        KafkaAvroBaseTransformer.TopicParamName -> s"'${topicConfig.output}'",
-        KafkaAvroBaseTransformer.SchemaVersionParamName -> s"'${SchemaVersionOption.LatestOptionName}'",
-        KafkaAvroBaseTransformer.SinkValidationModeParameterName -> s"'${validationMode.name}'"
+        KafkaAvroBaseComponentTransformer.SinkKeyParamName -> "",
+        KafkaAvroBaseComponentTransformer.SinkValueParamName -> "#input",
+        KafkaAvroBaseComponentTransformer.TopicParamName -> s"'${topicConfig.output}'",
+        KafkaAvroBaseComponentTransformer.SchemaVersionParamName -> s"'${SchemaVersionOption.LatestOptionName}'",
+        KafkaAvroBaseComponentTransformer.SinkValidationModeParameterName -> s"'${validationMode.name}'"
       )
 
   private def avroProcess(topicConfig: TopicConfig, versionOption: SchemaVersionOption, validationMode: ValidationMode = ValidationMode.strict) =
@@ -167,18 +170,18 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with E
       .source(
         "start",
         "kafka-avro",
-        KafkaAvroBaseTransformer.TopicParamName -> s"'${topicConfig.input}'",
-        KafkaAvroBaseTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
+        KafkaAvroBaseComponentTransformer.TopicParamName -> s"'${topicConfig.input}'",
+        KafkaAvroBaseComponentTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
       )
       .filter("name-filter", "#input.first == 'Jan'")
       .emptySink(
         "end",
         "kafka-avro-raw",
-        KafkaAvroBaseTransformer.SinkKeyParamName -> "",
-        KafkaAvroBaseTransformer.SinkValueParamName -> "#input",
-        KafkaAvroBaseTransformer.TopicParamName -> s"'${topicConfig.output}'",
-        KafkaAvroBaseTransformer.SchemaVersionParamName -> s"'${SchemaVersionOption.LatestOptionName}'",
-        KafkaAvroBaseTransformer.SinkValidationModeParameterName -> s"'${validationMode.name}'"
+        KafkaAvroBaseComponentTransformer.SinkKeyParamName -> "",
+        KafkaAvroBaseComponentTransformer.SinkValueParamName -> "#input",
+        KafkaAvroBaseComponentTransformer.TopicParamName -> s"'${topicConfig.output}'",
+        KafkaAvroBaseComponentTransformer.SchemaVersionParamName -> s"'${SchemaVersionOption.LatestOptionName}'",
+        KafkaAvroBaseComponentTransformer.SinkValidationModeParameterName -> s"'${validationMode.name}'"
 
       )
 
@@ -190,17 +193,17 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with E
       .source(
         "start",
         "kafka-avro",
-        KafkaAvroBaseTransformer.TopicParamName -> s"'${topicConfig.input}'",
-        KafkaAvroBaseTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
+        KafkaAvroBaseComponentTransformer.TopicParamName -> s"'${topicConfig.input}'",
+        KafkaAvroBaseComponentTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
       )
       .emptySink(
         "end",
         "kafka-avro-raw",
-        KafkaAvroBaseTransformer.SinkKeyParamName -> "",
-        KafkaAvroBaseTransformer.SinkValueParamName -> s"{first: #input.first, last: #input.last}",
-        KafkaAvroBaseTransformer.TopicParamName -> s"'${topicConfig.output}'",
-        KafkaAvroBaseTransformer.SinkValidationModeParameterName -> s"'${ValidationMode.strict.name}'",
-        KafkaAvroBaseTransformer.SchemaVersionParamName -> "'1'"
+        KafkaAvroBaseComponentTransformer.SinkKeyParamName -> "",
+        KafkaAvroBaseComponentTransformer.SinkValueParamName -> s"{first: #input.first, last: #input.last}",
+        KafkaAvroBaseComponentTransformer.TopicParamName -> s"'${topicConfig.output}'",
+        KafkaAvroBaseComponentTransformer.SinkValidationModeParameterName -> s"'${ValidationMode.strict.name}'",
+        KafkaAvroBaseComponentTransformer.SchemaVersionParamName -> "'1'"
       )
 
   private def versionOptionParam(versionOption: SchemaVersionOption) =
@@ -309,7 +312,7 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with E
           )
         )
         .filter("always-true-filter", """#outPutVar.key != "not key1 or key2"""")
-        .sink("end", "#outPutVar", "kafka-json", "topic" -> s"'$topicOut'")
+        .emptySink("end", "kafka-json", "topic" -> s"'$topicOut'", "value" -> "#outPutVar")
     ))
 
     logger.info("Starting union scenario")
@@ -389,11 +392,7 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with E
 
   private def consumeOneAvroMessage(topic: String) = valueDeserializer.deserialize(topic, consumeOneRawAvroMessage(topic).message())
 
-  protected def creator: GenericConfigCreator = new GenericConfigCreator {
-    override protected def createAvroSchemaRegistryProvider: SchemaRegistryProvider = ConfluentSchemaRegistryProvider.avroPayload(new MockConfluentSchemaRegistryClientFactory(schemaRegistryMockClient))
-
-    override protected def createJsonSchemaRegistryProvider: SchemaRegistryProvider = ConfluentSchemaRegistryProvider.jsonPayload(new MockConfluentSchemaRegistryClientFactory(schemaRegistryMockClient))
-  }
+  protected def creator: GenericConfigCreator = new GenericConfigCreator
 
 
   private var registrar: FlinkProcessRegistrar = _
