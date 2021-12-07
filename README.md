@@ -2,9 +2,9 @@
 Standard [Nussknacker](https://github.com/touk/nussknacker) distribution works for (more or less) latest Flink version. 
 However, Flink upgrade can be fairly complex process for large deployments. Most of Nussknacker code is based on stable Flink API, so changes required to run against older Flink version are usually relatively small. 
 
-This repository contains code that can be used to prepare custom [model](https://nussknacker.io/API.html) and [process engine](https://nussknacker.io/Engines.html) and run older Flink cluster (e.g. 1.9) with newest Nussknacker. 
+This repository contains code that can be used to prepare custom [model](https://nussknacker.io/API.html) and [process engine](https://nussknacker.io/Engines.html) and run older Flink cluster (e.g. 1.11) with newest Nussknacker. 
 
-Each supported Flink version (e.g. 1.9) comes with two modules:
+Each supported Flink version (e.g. 1.11) comes with two modules:
 - model - additional classes/changes that need to be put into model
 - manager - changes which have to be made in ProcessManager
 

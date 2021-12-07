@@ -13,7 +13,7 @@ val silencerV = "1.7.0"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val nussknackerV = "1.0.0"
+val nussknackerV = "1.1.0"
 
 val scalaTestV = "3.0.3"
 
@@ -57,10 +57,10 @@ def commonSettings(scalaV: String) =
     assembly / test := {}
   )
 
-val flink19V = "1.9.2"
 val flink111V = "1.11.3"
-val currentFlinkV = "1.13.1"
-val circeV = "0.11.2"
+val flink113V = "1.13.3"
+val currentFlinkV = "1.14.0"
+val sttpV = "2.2.9"
 
 //Here we use Flink version from Nussknacker, in each compatibility provider it will be overridden.
 lazy val commonTest = (project in file("commonTest")).
@@ -75,19 +75,9 @@ lazy val commonTest = (project in file("commonTest")).
     )
   )
 
-lazy val flink19ModelCompat = (project in file("flink19/model")).
-  settings(commonSettings(scala212V)).
-  settings(
-    name := "flink19-model",
-    libraryDependencies ++= deps(flink19V),
-    dependencyOverrides ++= flinkOverrides(flink19V) ++ Seq(
-      //???
-      "org.apache.kafka" % "kafka-clients" % "2.4.1"
-    )
-  ).dependsOn(commonTest % "test")
-
 lazy val flink111ModelCompat = (project in file("flink111/model")).
   settings(commonSettings(scala212V)).
+  settings(flinkExclusionsForBefore1_14).
   settings(
     name := "flink111-model",
     libraryDependencies ++= deps(flink111V),
@@ -101,6 +91,7 @@ lazy val flink111ManagerCompat = (project in file("flink111/manager")).
   settings(commonSettings(scala212V)).
   configs(IntegrationTest).
   settings(Defaults.itSettings).
+  settings(flinkExclusionsForBefore1_14).
   settings(
     name := "flink111-manager",
     libraryDependencies ++= managerDeps(flink111V),
@@ -114,21 +105,12 @@ lazy val flink111ManagerCompat = (project in file("flink111/manager")).
     ).value,
   ).dependsOn(commonTest % "test")
 
-
-lazy val flink19ManagerCompat = (project in file("flink19/manager")).
-  settings(commonSettings(scala212V)).
-  settings(
-    name := "flink19-manager",
-    libraryDependencies ++= managerDeps(flink19V),
-    dependencyOverrides ++= flinkOverrides(flink19V) ++ Seq(
-      "org.apache.kafka" % "kafka-clients" % "2.4.1"
-    )
-  )
-
 def managerDeps(version: String) = Seq(
   "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-http-utils" % nussknackerV % "provided,it,test",
   "pl.touk.nussknacker" %% "nussknacker-interpreter" % nussknackerV % "provided,it,test",
+  "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV,
+
   "pl.touk.nussknacker" %% "nussknacker-kafka-test-util" % nussknackerV % "it,test",
   "org.apache.flink" %% "flink-streaming-scala" % version excludeAll(
     ExclusionRule("log4j", "log4j"),
@@ -136,13 +118,22 @@ def managerDeps(version: String) = Seq(
   ),
   "com.whisk" %% "docker-testkit-scalatest" % "0.9.0" % "it,test",
   "com.whisk" %% "docker-testkit-impl-spotify" % "0.9.0" % "it,test",
+  "com.softwaremill.sttp.client" %% "async-http-client-backend-future" % sttpV,
+)
+
+val flinkExclusionsForBefore1_14 = Seq(
+  excludeDependencies ++= List(
+    "org.apache.flink" % "flink-runtime",
+    "org.apache.flink" % "flink-queryable-state-runtime"
+  )
 )
 
 def deps(version: String) = Seq(
   "org.apache.flink" %% "flink-streaming-scala" % version % "provided",
   "org.apache.flink" %% "flink-statebackend-rocksdb" % version % "provided",
   "pl.touk.nussknacker" %% "nussknacker-generic-model" % nussknackerV,
-  "pl.touk.nussknacker" %% "nussknacker-process" % nussknackerV,
+  "pl.touk.nussknacker" %% "nussknacker-base-components" % nussknackerV,
+  "pl.touk.nussknacker" %% "nussknacker-flink-engine" % nussknackerV,
 
   "pl.touk.nussknacker" %% "nussknacker-kafka-test-util" % nussknackerV % "test",
   "pl.touk.nussknacker" %% "nussknacker-flink-test-util" % nussknackerV % "test",
@@ -161,11 +152,6 @@ def flinkOverrides(version: String) = Seq(
   "org.apache.flink" %% "flink-connector-kafka" % version % "provided",
   "org.apache.flink" %% "flink-test-utils" % version % "test",
   "org.apache.flink" % "flink-metrics-dropwizard" % version % "test",
-
-  //we force circe version here, because sttp has 0.12.1 for scala 2.12, we don't want it ATM
-  "io.circe" %% "circe-core" % circeV,
-  "io.circe" %% "circe-parser" % circeV,
-
 )
 
 
@@ -181,5 +167,7 @@ def nussknackerAssemblyStrategy: String => MergeStrategy = {
   case PathList(ps@_*) if ps.last == "mimetypes.default" => MergeStrategy.first
   case PathList(ps@_*) if ps.last == "module-info.class" => MergeStrategy.first
   case PathList("org", "apache", "commons", "collections", ps) if ps.contains("FastHashMap") || ps == "ArrayStack.class" => MergeStrategy.first
+  case PathList(ps@_*) if ps.last == "FlinkMetricsProviderForScenario.class" => MergeStrategy.first
+
   case x => MergeStrategy.defaultMergeStrategy(x)
 }
