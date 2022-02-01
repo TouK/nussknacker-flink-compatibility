@@ -28,7 +28,6 @@ class FlinkStreamingDeploymentManagerSpec extends FunSuite with Matchers with St
   def prepareProcess(id: String, parallelism: Option[Int] = None) : EspProcess = {
     val baseProcessBuilder = EspProcessBuilder.id(id)
     parallelism.map(baseProcessBuilder.parallelism).getOrElse(baseProcessBuilder)
-      .exceptionHandler()
       .source("startProcess", "periodic",
         "period" -> "T(java.time.Duration).ofSeconds(10)",
         "count" -> "1",

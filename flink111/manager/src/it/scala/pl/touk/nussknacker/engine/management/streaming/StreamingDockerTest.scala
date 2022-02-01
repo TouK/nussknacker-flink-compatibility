@@ -6,7 +6,7 @@ import org.asynchttpclient.DefaultAsyncHttpClientConfig
 import org.scalatest.{Assertion, Matchers, Suite}
 import pl.touk.nussknacker.engine.ProcessingTypeConfig
 import pl.touk.nussknacker.engine.api.ProcessVersion
-import pl.touk.nussknacker.engine.api.deployment.{DeploymentData, DeploymentManager, GraphProcess}
+import pl.touk.nussknacker.engine.api.deployment.{DeploymentData, DeploymentManager, GraphProcess, ProcessingTypeDeploymentService, ProcessingTypeDeploymentServiceStub}
 import pl.touk.nussknacker.engine.api.process.ProcessName
 import pl.touk.nussknacker.engine.canonize.ProcessCanonizer
 import pl.touk.nussknacker.engine.graph.EspProcess
@@ -24,6 +24,7 @@ trait StreamingDockerTest extends DockerTest with Matchers {
   lazy val taskManagerContainer: DockerContainer = buildTaskManagerContainer()
   private implicit val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
   implicit val backend: SttpBackend[Future, Nothing, NothingT] = AsyncHttpClientFutureBackend.usingConfig(new DefaultAsyncHttpClientConfig.Builder().build())
+  implicit val deploymentService: ProcessingTypeDeploymentService = new ProcessingTypeDeploymentServiceStub(List.empty)
 
   abstract override def dockerContainers: List[DockerContainer] = {
     List(

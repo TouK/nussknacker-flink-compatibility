@@ -9,23 +9,22 @@ import io.confluent.kafka.serializers.{KafkaAvroDeserializer, KafkaAvroSerialize
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.flink.api.common.ExecutionConfig
-import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.scalatest.{EitherValues, FunSuiteLike, Matchers}
+import pl.touk.nussknacker.defaultmodel.DefaultConfigCreator
 import pl.touk.nussknacker.engine.api.CirceUtil.decodeJsonUnsafe
 import pl.touk.nussknacker.engine.api.deployment.DeploymentData
 import pl.touk.nussknacker.engine.api.process.ProcessObjectDependencies
 import pl.touk.nussknacker.engine.api.{JobData, MetaData, ProcessVersion, StreamMetaData}
+import pl.touk.nussknacker.engine.avro._
 import pl.touk.nussknacker.engine.avro.encode.{BestEffortAvroEncoder, ValidationMode}
 import pl.touk.nussknacker.engine.avro.kryo.AvroSerializersRegistrar
+import pl.touk.nussknacker.engine.avro.schemaregistry.confluent.ConfluentUtils
 import pl.touk.nussknacker.engine.avro.schemaregistry.confluent.client.{MockConfluentSchemaRegistryClientFactory, MockSchemaRegistryClient}
-import pl.touk.nussknacker.engine.avro.schemaregistry.confluent.{ConfluentSchemaRegistryProvider, ConfluentUtils}
-import pl.touk.nussknacker.engine.avro.schemaregistry.{ExistingSchemaVersion, LatestSchemaVersion, SchemaRegistryProvider, SchemaVersionOption}
-import pl.touk.nussknacker.engine.avro._
+import pl.touk.nussknacker.engine.avro.schemaregistry.{ExistingSchemaVersion, LatestSchemaVersion, SchemaVersionOption}
 import pl.touk.nussknacker.engine.build.{EspProcessBuilder, GraphBuilder}
 import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder
 import pl.touk.nussknacker.engine.graph.EspProcess
-import pl.touk.nussknacker.engine.graph.exceptionhandler.ExceptionHandlerRef
-import pl.touk.nussknacker.engine.kafka.{KafkaConfig, KafkaSpec, KafkaZookeeperUtils}
+import pl.touk.nussknacker.engine.kafka.{KafkaConfig, KafkaSpec, KafkaTestUtils}
 import pl.touk.nussknacker.engine.process.ExecutionConfigPreparer
 import pl.touk.nussknacker.engine.process.ExecutionConfigPreparer.{ProcessSettingsPreparer, UnoptimizedSerializationPreparer}
 import pl.touk.nussknacker.engine.process.compiler.FlinkProcessCompiler
@@ -33,7 +32,6 @@ import pl.touk.nussknacker.engine.process.registrar.FlinkProcessRegistrar
 import pl.touk.nussknacker.engine.spel
 import pl.touk.nussknacker.engine.testing.LocalModelData
 import pl.touk.nussknacker.engine.util.namespaces.ObjectNamingProvider
-import pl.touk.nussknacker.genericmodel.GenericConfigCreator
 
 import java.nio.charset.StandardCharsets
 import java.time.Instant
@@ -52,25 +50,25 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with E
 
   protected def flinkMiniCluster: FlinkMiniClusterHolder
 
-  import KafkaZookeeperUtils._
+  import KafkaTestUtils._
   import MockSchemaRegistry._
+  import org.apache.flink.streaming.api.scala._
   import spel.Implicits._
 
   private val secondsToWaitForAvro = 30
 
   override lazy val config: Config = ConfigFactory.load()
-    .withValue("kafka.kafkaAddress", fromAnyRef(kafkaZookeeperServer.kafkaAddress))
+    .withValue("components.mockKafka.config.kafkaAddress", fromAnyRef(kafkaZookeeperServer.kafkaAddress))
     .withValue("components.kafka.disabled", fromAnyRef(true))
     .withValue("components.mockKafka.disabled", fromAnyRef(false))
-
-    .withValue("kafka.kafkaProperties.\"schema.registry.url\"", fromAnyRef("not_used"))
+    .withValue("components.mockKafka.config.kafkaProperties.\"schema.registry.url\"", fromAnyRef("not_used"))
     // we turn off auto registration to do it on our own passing mocked schema registry client
-    .withValue(s"kafka.kafkaEspProperties.${AvroSerializersRegistrar.autoRegisterRecordSchemaIdSerializationProperty}", fromAnyRef(false))
+    .withValue(s"components.mockKafka.config.kafkaEspProperties.${AvroSerializersRegistrar.autoRegisterRecordSchemaIdSerializationProperty}", fromAnyRef(false))
     .withValue("rocksDB.checkpointDataUri", fromAnyRef("file:///tmp/rocksDBCheckpointDataUri"))
 
   lazy val mockProcessObjectDependencies: ProcessObjectDependencies = ProcessObjectDependencies(config, ObjectNamingProvider(getClass.getClassLoader))
 
-  lazy val kafkaConfig: KafkaConfig = KafkaConfig.parseConfig(config)
+  lazy val kafkaConfig: KafkaConfig = KafkaConfig.parseConfig(config, "components.mockKafka.config")
 
   val JsonInTopic: String = "name.json.input"
   val JsonOutTopic: String = "name.json.output"
@@ -125,7 +123,6 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with E
     EspProcessBuilder
       .id("json-test")
       .parallelism(1)
-      .exceptionHandler()
       .source("start", "kafka-typed-json",
         "topic" -> s"'$JsonInTopic'",
         "type" ->
@@ -144,7 +141,6 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with E
     EspProcessBuilder
       .id("json-schemed-test")
       .parallelism(1)
-      .exceptionHandler()
       .source(
         "start",
         "kafka-registry-typed-json",
@@ -166,7 +162,6 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with E
     EspProcessBuilder
       .id("avro-test")
       .parallelism(1)
-      .exceptionHandler()
       .source(
         "start",
         "kafka-avro",
@@ -189,7 +184,6 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with E
     EspProcessBuilder
       .id("avro-from-scratch-test")
       .parallelism(1)
-      .exceptionHandler()
       .source(
         "start",
         "kafka-avro",
@@ -293,7 +287,7 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with E
     val bizarreBranchName = "?branch .2-"
     val sanitizedBizarreBranchName = "_branch__2_"
 
-    val process = EspProcess(MetaData("proc1", StreamMetaData()), ExceptionHandlerRef(List()), NonEmptyList.of(
+    val process = EspProcess(MetaData("proc1", StreamMetaData()), NonEmptyList.of(
       GraphBuilder
         .source("sourceId1", "kafka-typed-json",
           "topic" -> s"'$topicIn1'",
@@ -307,11 +301,11 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with E
       GraphBuilder
         .branch("join1", "union", Some("outPutVar"),
           List(
-            "branch1" -> List("key" -> "'key1'", "value" -> "#input.data1"),
-            bizarreBranchName -> List("key" -> "'key2'", "value" -> "#input.data2")
+            "branch1" -> List("Output expression" -> "{foo: #input.data1}"),
+            bizarreBranchName -> List("Output expression" -> "{foo: #input.data2}")
           )
         )
-        .filter("always-true-filter", """#outPutVar.key != "not key1 or key2"""")
+        .filter("always-true-filter", """#outPutVar.foo != "not from branch1 nor branch2"""")
         .emptySink("end", "kafka-json", "topic" -> s"'$topicOut'", "value" -> "#outPutVar")
     ))
 
@@ -324,14 +318,12 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with E
       processed.map(parseProcessedJson) should contain theSameElementsAs List(
         parseJson(
           s"""{
-             |  "key" : "key2",
-             |  "$sanitizedBizarreBranchName" : "from source2"
+             |  "foo" : "from source2"
              |}""".stripMargin
         ),
         parseJson(
           """{
-            |  "key" : "key1",
-            |  "branch1" : "from source1"
+            |  "foo" : "from source1"
             |}""".stripMargin
         )
       )
@@ -384,7 +376,6 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with E
 
   protected def parseProcessedJson(str: String): Json = parseJson(str)
 
-
   private def consumeOneRawAvroMessage(topic: String) = {
     val consumer = kafkaClient.createConsumer()
     consumer.consume(topic, secondsToWaitForAvro).head
@@ -392,8 +383,7 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with E
 
   private def consumeOneAvroMessage(topic: String) = valueDeserializer.deserialize(topic, consumeOneRawAvroMessage(topic).message())
 
-  protected def creator: GenericConfigCreator = new GenericConfigCreator
-
+  protected def creator: DefaultConfigCreator = new DefaultConfigCreator
 
   private var registrar: FlinkProcessRegistrar = _
   private lazy val valueSerializer = new KafkaAvroSerializer(schemaRegistryMockClient)
