@@ -55,6 +55,10 @@ class FlinkMetricsProviderForScenario(runtimeContext: RuntimeContext) extends Me
     group.histogram(name, histogram)
   }
 
+  override def remove(metricIdentifier: MetricIdentifier): Unit = {
+    ??? // Shouldn't be needed because Flink jobs are recreated "from scratch" and no cleanup of metrics during cancel is needed
+  }
+
   private def groupsWithName(nameParts: NonEmptyList[String], tags: Map[String, String]): (MetricGroup, String) = {
     val namespaceTags = extractTags(NkGlobalParameters.readFromContext(runtimeContext.getExecutionConfig))
     tagMode(nameParts, tags ++ namespaceTags)

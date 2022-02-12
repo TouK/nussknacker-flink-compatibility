@@ -5,7 +5,6 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory.fromAnyRef
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.ExecutionConfig
-import org.apache.flink.api.common.restartstrategy.RestartStrategies
 import org.apache.flink.streaming.api.functions.{AssignerWithPunctuatedWatermarks, KeyedProcessFunction}
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment, createTypeInformation}
 import org.apache.flink.streaming.api.watermark.Watermark
@@ -13,14 +12,12 @@ import org.apache.flink.util.Collector
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuiteLike, Matchers}
 import pl.touk.nussknacker.engine.api._
 import pl.touk.nussknacker.engine.api.deployment.DeploymentData
-import pl.touk.nussknacker.engine.api.exception.ExceptionHandlerFactory
 import pl.touk.nussknacker.engine.api.process.{ProcessObjectDependencies, SinkFactory, SourceFactory, WithCategories}
 import pl.touk.nussknacker.engine.api.typed.typing.Typed
 import pl.touk.nussknacker.engine.build.EspProcessBuilder
 import pl.touk.nussknacker.engine.flink.api.process.{FlinkCustomNodeContext, FlinkCustomStreamTransformation}
 import pl.touk.nussknacker.engine.flink.api.timestampwatermark.{LegacyTimestampWatermarkHandler, TimestampWatermarkHandler}
 import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder
-import pl.touk.nussknacker.engine.flink.util.exception.ConfigurableExceptionHandler
 import pl.touk.nussknacker.engine.flink.util.source.CollectionSource
 import pl.touk.nussknacker.engine.process.ExecutionConfigPreparer
 import pl.touk.nussknacker.engine.process.compiler.FlinkProcessCompiler
@@ -62,7 +59,6 @@ trait BaseTimestampTest extends FunSuiteLike with BeforeAndAfterAll with BeforeA
     import spel.Implicits._
     val process = EspProcessBuilder.id("timestamps")
       .parallelism(1)
-      .exceptionHandler()
       .source("source", "source")
       .customNode("custom", "output", "check")
       .emptySink("log", "log", "value" -> "#output")
@@ -106,12 +102,6 @@ class TestCreator(assigner: Option[TimestampWatermarkHandler[String]]) extends E
 
   override def sinkFactories(processObjectDependencies: ProcessObjectDependencies): Map[String, WithCategories[SinkFactory]] = {
     Map("log" -> WithCategories(SinkForLongs.toSinkFactory))
-  }
-
-  override def exceptionHandlerFactory(processObjectDependencies: ProcessObjectDependencies): ExceptionHandlerFactory = {
-    ExceptionHandlerFactory.noParams(new ConfigurableExceptionHandler(_, processObjectDependencies, Thread.currentThread().getContextClassLoader) {
-      override def restartStrategy: RestartStrategies.RestartStrategyConfiguration = RestartStrategies.noRestart()
-    })
   }
 }
 

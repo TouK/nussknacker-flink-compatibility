@@ -4,9 +4,9 @@ import pl.touk.nussknacker.compatibility.common.MockSchemaRegistry.schemaRegistr
 import pl.touk.nussknacker.engine.avro.schemaregistry.SchemaRegistryProvider
 import pl.touk.nussknacker.engine.avro.schemaregistry.confluent.ConfluentSchemaRegistryProvider
 import pl.touk.nussknacker.engine.avro.schemaregistry.confluent.client.MockConfluentSchemaRegistryClientFactory
-import pl.touk.nussknacker.engine.flink.util.transformer.KafkaComponentsProvider
+import pl.touk.nussknacker.engine.flink.util.transformer.FlinkKafkaComponentProvider
 
-class MockKafkaComponentProvider extends KafkaComponentsProvider {
+class MockKafkaComponentProvider extends FlinkKafkaComponentProvider {
 
   override def providerName: String = "mockKafka"
 

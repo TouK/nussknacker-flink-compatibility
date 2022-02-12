@@ -4,7 +4,7 @@ import sbtassembly.{MergeStrategy, PathList}
 
 val scala212V = "2.12.10"
 
-val scalaCollectionsCompatV = "2.1.6"
+val scalaCollectionsCompatV = "2.3.2"
 
 // Silencer must be compatible with exact scala version - see compatibility matrix: https://search.maven.org/search?q=silencer-plugin
 // Silencer 1.7.x require Scala 2.12.11 (see warning above)
@@ -13,9 +13,9 @@ val silencerV = "1.7.0"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val nussknackerV = "1.1.0"
+val nussknackerV = "1.2.0"
 
-val scalaTestV = "3.0.3"
+val scalaTestV = "3.0.8"
 
 def commonSettings(scalaV: String) =
   Seq(
@@ -59,7 +59,7 @@ def commonSettings(scalaV: String) =
 
 val flink111V = "1.11.3"
 val flink113V = "1.13.3"
-val currentFlinkV = "1.14.0"
+val currentFlinkV = "1.14.3"
 val sttpV = "2.2.9"
 
 //Here we use Flink version from Nussknacker, in each compatibility provider it will be overridden.
@@ -68,9 +68,11 @@ lazy val commonTest = (project in file("commonTest")).
   settings(
     name := "commonTest",
     libraryDependencies ++= Seq(
-      "pl.touk.nussknacker" %% "nussknacker-generic-model" % nussknackerV,
+      "pl.touk.nussknacker" %% "nussknacker-default-model" % nussknackerV,
+      "pl.touk.nussknacker" %% "nussknacker-flink-avro-util" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-kafka-test-util" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-flink-test-util" % nussknackerV,
+      "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV,
       "org.apache.flink" %% "flink-streaming-scala" % currentFlinkV % "provided",
     )
   )
@@ -98,7 +100,9 @@ lazy val flink111ManagerCompat = (project in file("flink111/manager")).
     dependencyOverrides ++= flinkOverrides(flink111V) ++ Seq(
       //For some strange reason, docker client libraries have conflict with schema registry client :/
       "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
-      "org.apache.kafka" % "kafka-clients" % "2.4.1"
+      "org.apache.kafka" % "kafka-clients" % "2.4.1",
+      // must be the same as used by flink - otherwise it is evicted by version from deployment-manager-api
+      "com.typesafe.akka" %% "akka-actor" % "2.5.21"
     ),
     IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
       flink111ModelCompat / Compile / assembly
@@ -109,7 +113,7 @@ def managerDeps(version: String) = Seq(
   "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-http-utils" % nussknackerV % "provided,it,test",
   "pl.touk.nussknacker" %% "nussknacker-interpreter" % nussknackerV % "provided,it,test",
-  "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV,
+  "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
 
   "pl.touk.nussknacker" %% "nussknacker-kafka-test-util" % nussknackerV % "it,test",
   "org.apache.flink" %% "flink-streaming-scala" % version excludeAll(
@@ -131,9 +135,10 @@ val flinkExclusionsForBefore1_14 = Seq(
 def deps(version: String) = Seq(
   "org.apache.flink" %% "flink-streaming-scala" % version % "provided",
   "org.apache.flink" %% "flink-statebackend-rocksdb" % version % "provided",
-  "pl.touk.nussknacker" %% "nussknacker-generic-model" % nussknackerV,
-  "pl.touk.nussknacker" %% "nussknacker-base-components" % nussknackerV,
-  "pl.touk.nussknacker" %% "nussknacker-flink-engine" % nussknackerV,
+  "pl.touk.nussknacker" %% "nussknacker-default-model" % nussknackerV,
+  "pl.touk.nussknacker" %% "nussknacker-flink-kafka-components" % nussknackerV,
+  "pl.touk.nussknacker" %% "nussknacker-flink-base-components" % nussknackerV,
+  "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV,
 
   "pl.touk.nussknacker" %% "nussknacker-kafka-test-util" % nussknackerV % "test",
   "pl.touk.nussknacker" %% "nussknacker-flink-test-util" % nussknackerV % "test",
@@ -167,7 +172,8 @@ def nussknackerAssemblyStrategy: String => MergeStrategy = {
   case PathList(ps@_*) if ps.last == "mimetypes.default" => MergeStrategy.first
   case PathList(ps@_*) if ps.last == "module-info.class" => MergeStrategy.first
   case PathList("org", "apache", "commons", "collections", ps) if ps.contains("FastHashMap") || ps == "ArrayStack.class" => MergeStrategy.first
-  case PathList(ps@_*) if ps.last == "FlinkMetricsProviderForScenario.class" => MergeStrategy.first
+  case PathList(ps@_*) if ps.last.matches("FlinkMetricsProviderForScenario.*.class") => MergeStrategy.first
+  case PathList(ps@_*) if ps.last == "MetricUtils.class" => MergeStrategy.first
 
   case x => MergeStrategy.defaultMergeStrategy(x)
 }
