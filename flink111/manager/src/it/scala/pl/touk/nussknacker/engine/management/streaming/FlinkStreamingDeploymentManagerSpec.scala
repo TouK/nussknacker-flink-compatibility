@@ -3,10 +3,10 @@ package pl.touk.nussknacker.engine.management.streaming
 import org.scalatest.{FunSuite, Matchers}
 import pl.touk.nussknacker.engine.api.ProcessVersion
 import pl.touk.nussknacker.engine.api.process.{ProcessId, ProcessName, VersionId}
-import pl.touk.nussknacker.engine.build.EspProcessBuilder
+import pl.touk.nussknacker.engine.build.ScenarioBuilder
 import pl.touk.nussknacker.engine.graph.EspProcess
-import pl.touk.nussknacker.engine.util.config.ScalaMajorVersionConfig
 import pl.touk.nussknacker.engine.spel.Implicits._
+import pl.touk.nussknacker.engine.util.config.ScalaMajorVersionConfig
 
 class FlinkStreamingDeploymentManagerSpec extends FunSuite with Matchers with StreamingDockerTest {
 
@@ -26,7 +26,7 @@ class FlinkStreamingDeploymentManagerSpec extends FunSuite with Matchers with St
   }
 
   def prepareProcess(id: String, parallelism: Option[Int] = None) : EspProcess = {
-    val baseProcessBuilder = EspProcessBuilder.id(id)
+    val baseProcessBuilder = ScenarioBuilder.streaming(id)
     parallelism.map(baseProcessBuilder.parallelism).getOrElse(baseProcessBuilder)
       .source("startProcess", "periodic",
         "period" -> "T(java.time.Duration).ofSeconds(10)",

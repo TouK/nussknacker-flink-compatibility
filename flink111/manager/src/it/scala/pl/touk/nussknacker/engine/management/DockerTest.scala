@@ -12,9 +12,8 @@ import org.scalatest.Suite
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Millis, Minutes, Span}
 import pl.touk.nussknacker.engine.ProcessingTypeConfig
-import pl.touk.nussknacker.engine.api.deployment.User
+import pl.touk.nussknacker.engine.deployment.User
 import pl.touk.nussknacker.engine.util.config.ScalaMajorVersionConfig
-import pl.touk.nussknacker.test.{ExtremelyPatientScalaFutures, VeryPatientScalaFutures}
 
 import java.io.File
 import java.nio.file.attribute.{PosixFilePermission, PosixFilePermissions}

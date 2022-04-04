@@ -1,4 +1,4 @@
-package pl.touk.nussknacker.engine.flink.util.metrics
+package pl.touk.nussknacker.engine.process.compiler
 
 import cats.data.NonEmptyList
 import com.codahale.metrics
@@ -7,25 +7,12 @@ import org.apache.flink
 import org.apache.flink.api.common.functions.RuntimeContext
 import org.apache.flink.dropwizard.metrics.DropwizardHistogramWrapper
 import org.apache.flink.metrics.MetricGroup
-import pl.touk.nussknacker.engine.api.Lifecycle
-import pl.touk.nussknacker.engine.api.runtimecontext.EngineRuntimeContext
 import pl.touk.nussknacker.engine.flink.api.NkGlobalParameters
 import pl.touk.nussknacker.engine.util.metrics._
-import pl.touk.nussknacker.engine.util.service.EspTimer
 
 import java.util.concurrent.TimeUnit
 
-@deprecated("use FlinkMetricsProviderForScenario directly", "1.1")
-class MetricUtils(runtimeContext: RuntimeContext) extends FlinkMetricsProviderForScenario(runtimeContext)
-
-class FlinkMetricsProviderForScenario(runtimeContext: RuntimeContext) extends MetricsProviderForScenario {
-
-  override def espTimer(identifier: MetricIdentifier, instantTimerWindowInSeconds: Long): EspTimer = {
-    val instantRateMeter = new InstantRateMeter with flink.metrics.Gauge[Double]
-    val meter = gauge[Double, instantRateMeter.type](identifier.name :+ EspTimer.instantRateSuffix, identifier.tags, instantRateMeter)
-    val registered = histogram(identifier.withNameSuffix(EspTimer.histogramSuffix), instantTimerWindowInSeconds)
-    EspTimer(meter, registered)
-  }
+class FlinkMetricsProviderForScenario(runtimeContext: RuntimeContext) extends BaseMetricsProviderForScenario {
 
   override def registerGauge[T](identifier: MetricIdentifier, value: Gauge[T]): Unit =
     gauge[T, flink.metrics.Gauge[T]](identifier.name, identifier.tags, () => value.getValue)
@@ -81,17 +68,6 @@ class FlinkMetricsProviderForScenario(runtimeContext: RuntimeContext) extends Me
       case Some(Some(params)) => params.tags
       case _ => Map()
     }
-  }
-
-}
-
-trait WithMetrics extends Lifecycle {
-
-  @transient protected var metricsProvider : MetricsProviderForScenario = _
-
-  override def open(context: EngineRuntimeContext): Unit = {
-    super.open(context)
-    this.metricsProvider = context.metricsProvider
   }
 
 }

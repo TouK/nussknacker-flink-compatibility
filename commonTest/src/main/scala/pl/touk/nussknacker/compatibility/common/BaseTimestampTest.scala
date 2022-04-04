@@ -11,10 +11,10 @@ import org.apache.flink.streaming.api.watermark.Watermark
 import org.apache.flink.util.Collector
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuiteLike, Matchers}
 import pl.touk.nussknacker.engine.api._
-import pl.touk.nussknacker.engine.api.deployment.DeploymentData
-import pl.touk.nussknacker.engine.api.process.{ProcessObjectDependencies, SinkFactory, SourceFactory, WithCategories}
+import pl.touk.nussknacker.engine.api.process._
 import pl.touk.nussknacker.engine.api.typed.typing.Typed
-import pl.touk.nussknacker.engine.build.EspProcessBuilder
+import pl.touk.nussknacker.engine.build.ScenarioBuilder
+import pl.touk.nussknacker.engine.deployment.DeploymentData
 import pl.touk.nussknacker.engine.flink.api.process.{FlinkCustomNodeContext, FlinkCustomStreamTransformation}
 import pl.touk.nussknacker.engine.flink.api.timestampwatermark.{LegacyTimestampWatermarkHandler, TimestampWatermarkHandler}
 import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder
@@ -24,7 +24,6 @@ import pl.touk.nussknacker.engine.process.compiler.FlinkProcessCompiler
 import pl.touk.nussknacker.engine.process.helpers.SampleNodes.SinkForLongs
 import pl.touk.nussknacker.engine.process.registrar.FlinkProcessRegistrar
 import pl.touk.nussknacker.engine.testing.LocalModelData
-import pl.touk.nussknacker.engine.util.process.EmptyProcessConfigCreator
 import pl.touk.nussknacker.engine.{api, spel}
 import pl.touk.nussknacker.test.VeryPatientScalaFutures
 
@@ -57,7 +56,7 @@ trait BaseTimestampTest extends FunSuiteLike with BeforeAndAfterAll with BeforeA
 
   private def runWithAssigner(assigner: Option[TimestampWatermarkHandler[String]]) = {
     import spel.Implicits._
-    val process = EspProcessBuilder.id("timestamps")
+    val process = ScenarioBuilder.streaming("timestamps")
       .parallelism(1)
       .source("source", "source")
       .customNode("custom", "output", "check")
