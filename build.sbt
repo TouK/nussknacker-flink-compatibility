@@ -13,7 +13,7 @@ val silencerV = "1.7.0"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val nussknackerV = "1.2.0"
+val nussknackerV = "1.3.0"
 
 val scalaTestV = "3.0.8"
 
@@ -69,9 +69,9 @@ lazy val commonTest = (project in file("commonTest")).
     name := "commonTest",
     libraryDependencies ++= Seq(
       "pl.touk.nussknacker" %% "nussknacker-default-model" % nussknackerV,
-      "pl.touk.nussknacker" %% "nussknacker-flink-avro-util" % nussknackerV,
-      "pl.touk.nussknacker" %% "nussknacker-kafka-test-util" % nussknackerV,
-      "pl.touk.nussknacker" %% "nussknacker-flink-test-util" % nussknackerV,
+      "pl.touk.nussknacker" %% "nussknacker-flink-avro-components-utils" % nussknackerV,
+      "pl.touk.nussknacker" %% "nussknacker-kafka-test-utils" % nussknackerV,
+      "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV,
       "org.apache.flink" %% "flink-streaming-scala" % currentFlinkV % "provided",
     )
@@ -115,7 +115,7 @@ def managerDeps(version: String) = Seq(
   "pl.touk.nussknacker" %% "nussknacker-interpreter" % nussknackerV % "provided,it,test",
   "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
 
-  "pl.touk.nussknacker" %% "nussknacker-kafka-test-util" % nussknackerV % "it,test",
+  "pl.touk.nussknacker" %% "nussknacker-kafka-test-utils" % nussknackerV % "it,test",
   "org.apache.flink" %% "flink-streaming-scala" % version excludeAll(
     ExclusionRule("log4j", "log4j"),
     ExclusionRule("org.slf4j", "slf4j-log4j12")
@@ -140,8 +140,8 @@ def deps(version: String) = Seq(
   "pl.touk.nussknacker" %% "nussknacker-flink-base-components" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV,
 
-  "pl.touk.nussknacker" %% "nussknacker-kafka-test-util" % nussknackerV % "test",
-  "pl.touk.nussknacker" %% "nussknacker-flink-test-util" % nussknackerV % "test",
+  "pl.touk.nussknacker" %% "nussknacker-kafka-test-utils" % nussknackerV % "test",
+  "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV % "test",
   "org.apache.flink" %% "flink-streaming-scala" % version % "test",
 )
 
