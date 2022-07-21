@@ -56,7 +56,7 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
   import spel.Implicits._
 
   override lazy val config: Config = ConfigFactory.load()
-    .withValue("components.mockKafka.config.kafkaAddress", fromAnyRef(kafkaZookeeperServer.kafkaAddress))
+    .withValue("components.mockKafka.config.kafkaAddress", fromAnyRef(kafkaServer.kafkaAddress))
     .withValue("components.kafka.disabled", fromAnyRef(true))
     .withValue("components.mockKafka.disabled", fromAnyRef(false))
     .withValue("components.mockKafka.config.kafkaProperties.\"schema.registry.url\"", fromAnyRef("not_used"))

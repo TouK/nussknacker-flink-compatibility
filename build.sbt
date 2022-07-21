@@ -13,7 +13,7 @@ val silencerV = "1.7.0"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val nussknackerV = "1.4.0"
+val nussknackerV = "1.5.0-staging-2022-07-21-8425-ba021151f26eabe2fdc456b17538afc08b7e56d1-SNAPSHOT"
 
 val scalaTestV = "3.0.8"
 
