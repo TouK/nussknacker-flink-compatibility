@@ -11,6 +11,12 @@ val scalaCollectionsCompatV = "2.3.2"
 val silencerV_2_12 = "1.6.0"
 val silencerV = "1.7.0"
 
+val flink111V = "1.11.3"
+val flink113V = "1.13.3"
+val currentFlinkV = "1.14.3"
+val sttpV = "2.2.9"
+val kafkaV = "2.8.1"
+
 ThisBuild / version := "0.1-SNAPSHOT"
 
 val nussknackerV = "1.5.0-staging-2022-07-21-8425-ba021151f26eabe2fdc456b17538afc08b7e56d1-SNAPSHOT"
@@ -57,11 +63,6 @@ def commonSettings(scalaV: String) =
     assembly / test := {}
   )
 
-val flink111V = "1.11.3"
-val flink113V = "1.13.3"
-val currentFlinkV = "1.14.3"
-val sttpV = "2.2.9"
-
 //Here we use Flink version from Nussknacker, in each compatibility provider it will be overridden.
 lazy val commonTest = (project in file("commonTest")).
   settings(commonSettings(scala212V)).
@@ -85,7 +86,7 @@ lazy val flink111ModelCompat = (project in file("flink111/model")).
     libraryDependencies ++= deps(flink111V),
     dependencyOverrides ++= flinkOverrides(flink111V) ++ Seq(
       //???
-      "org.apache.kafka" % "kafka-clients" % "2.4.1",
+      "org.apache.kafka" % "kafka-clients" % kafkaV,
     )
   ).dependsOn(commonTest % "test")
 
@@ -100,7 +101,7 @@ lazy val flink111ManagerCompat = (project in file("flink111/manager")).
     dependencyOverrides ++= flinkOverrides(flink111V) ++ Seq(
       //For some strange reason, docker client libraries have conflict with schema registry client :/
       "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
-      "org.apache.kafka" % "kafka-clients" % "2.4.1",
+      "org.apache.kafka" % "kafka-clients" % kafkaV,
       // must be the same as used by flink - otherwise it is evicted by version from deployment-manager-api
       "com.typesafe.akka" %% "akka-actor" % "2.5.21"
     ),
