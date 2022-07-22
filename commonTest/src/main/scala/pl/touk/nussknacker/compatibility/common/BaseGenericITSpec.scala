@@ -9,8 +9,9 @@ import io.confluent.kafka.serializers.{KafkaAvroDeserializer, KafkaAvroSerialize
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.flink.api.common.ExecutionConfig
+import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
 import org.scalatest.{FunSuiteLike, Matchers}
-import pl.touk.nussknacker.defaultmodel.DefaultConfigCreator
+import pl.touk.nussknacker.defaultmodel.{DefaultConfigCreator}
 import pl.touk.nussknacker.engine.api.CirceUtil.decodeJsonUnsafe
 import pl.touk.nussknacker.engine.api.process.ProcessObjectDependencies
 import pl.touk.nussknacker.engine.api.{JobData, ProcessVersion}
@@ -39,7 +40,7 @@ import java.time.temporal.ChronoUnit
 
 /*
   This trait should be based on GenericITSpec:
-  https://github.com/TouK/nussknacker/blob/staging/engine/flink/generic/src/test/scala/pl/touk/nussknacker/genericmodel/GenericItSpec.scala
+  https://github.com/TouK/nussknacker/blob/staging/engine/flink/tests/src/test/scala/pl/touk/nussknacker/defaultmodel/GenericItSpec.scala
   Following changes are made ATM:
   - `extends FunSuite with FlinkSpec` replaced with `extends FunSuiteLike` ==> FlinkSpec to be defined for each compatibility version
   - flinkMiniCluster: FlinkMiniClusterHolder  ==> should be defined in Flink*Spec
@@ -207,7 +208,7 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
     }
 
   test("should read json object from kafka, filter and save it to kafka, passing timestamp") {
-    val timeAgo = Instant.now().minus(10, ChronoUnit.DAYS).toEpochMilli
+    val timeAgo = Instant.now().minus(10, ChronoUnit.HOURS).toEpochMilli
 
     sendAsJson(givenNotMatchingJsonObj, JsonInTopic, timeAgo)
     sendAsJson(givenMatchingJsonObj, JsonInTopic, timeAgo)
@@ -234,7 +235,7 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
   }
 
   test("should read avro object from kafka, filter and save it to kafka, passing timestamp") {
-    val timeAgo = Instant.now().minus(10, ChronoUnit.DAYS).toEpochMilli
+    val timeAgo = Instant.now().minus(10, ChronoUnit.HOURS).toEpochMilli
 
     val topicConfig = createAndRegisterTopicConfig("read-filter-save-avro", RecordSchemas)
 
@@ -249,11 +250,10 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
   }
 
   test("should read schemed json from kafka, filter and save it to kafka, passing timestamp") {
-    val timeAgo = Instant.now().minus(10, ChronoUnit.DAYS).toEpochMilli
-
+    val timeAgo = Instant.now().minus(10, ChronoUnit.HOURS).toEpochMilli
     val topicConfig = createAndRegisterTopicConfig("read-filter-save-json", RecordSchemas)
 
-    sendAsJson(givenMatchingJsonObj, topicConfig.input, timeAgo)
+    logger.info(s"Message sent successful: ${sendAsJson(givenMatchingJsonObj, topicConfig.input, timeAgo).futureValue}")
 
     run(jsonSchemedProcess(topicConfig, ExistingSchemaVersion(1), validationMode = ValidationMode.allowOptional)) {
       val consumer = kafkaClient.createConsumer()
@@ -354,7 +354,7 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
     env.withJobRunning(process.id)(action)
   }
 
-  private def sendAvro(obj: Any, topic: String, timestamp: java.lang.Long = null) = {
+  protected def sendAvro(obj: Any, topic: String, timestamp: java.lang.Long = null) = {
     val serializedObj = valueSerializer.serialize(topic, obj)
     kafkaClient.sendRawMessage(topic, Array.empty, serializedObj, timestamp = timestamp)
   }
@@ -382,7 +382,7 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
     topicConfig
   }
 
-  private def createAndRegisterTopicConfig(name: String, schema: Schema): TopicConfig =
+  protected def createAndRegisterTopicConfig(name: String, schema: Schema): TopicConfig =
     createAndRegisterTopicConfig(name, List(schema))
 }
 
