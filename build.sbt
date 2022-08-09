@@ -19,7 +19,7 @@ val kafkaV = "2.8.1"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val nussknackerV = "1.5.0-staging-2022-07-21-8425-ba021151f26eabe2fdc456b17538afc08b7e56d1-SNAPSHOT"
+val nussknackerV = "1.5.0-staging-2022-08-08-8789-d5a9c8ab869a1071d1e30239ddc43c4a04bc1044-SNAPSHOT"
 
 val scalaTestV = "3.0.8"
 
@@ -70,7 +70,7 @@ lazy val commonTest = (project in file("commonTest")).
     name := "commonTest",
     libraryDependencies ++= Seq(
       "pl.touk.nussknacker" %% "nussknacker-default-model" % nussknackerV,
-      "pl.touk.nussknacker" %% "nussknacker-flink-avro-components-utils" % nussknackerV,
+      "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-kafka-test-utils" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV,
