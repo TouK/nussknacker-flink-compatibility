@@ -1,4 +1,5 @@
 import sbt.Keys._
+import sbtassembly.AssemblyPlugin.autoImport
 import sbtassembly.AssemblyPlugin.autoImport.assembly
 import sbtassembly.{MergeStrategy, PathList}
 
@@ -175,6 +176,8 @@ def nussknackerAssemblyStrategy: String => MergeStrategy = {
   case PathList("org", "apache", "commons", "collections", ps) if ps.contains("FastHashMap") || ps == "ArrayStack.class" => MergeStrategy.first
   case PathList(ps@_*) if ps.last.matches("FlinkMetricsProviderForScenario.*.class") => MergeStrategy.first
   case PathList(ps@_*) if ps.last == "MetricUtils.class" => MergeStrategy.first
+  case PathList(ps@_*) if ps.head == "draftv4" && ps.last == "schema" => MergeStrategy.first //Due to swagger-parser dependencies having different schema definitions
+
 
   case x => MergeStrategy.defaultMergeStrategy(x)
 }
