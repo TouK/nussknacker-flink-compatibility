@@ -20,7 +20,7 @@ val kafkaV = "2.8.1"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val nussknackerV = "1.5.0-staging-2022-08-08-8789-d5a9c8ab869a1071d1e30239ddc43c4a04bc1044-SNAPSHOT"
+val nussknackerV = "1.5.0-release_1.5-2022-08-12-8938-4d608ac30f648a57a11caa897e4f9e060eafc3fd-SNAPSHOT"
 
 val scalaTestV = "3.0.8"
 
