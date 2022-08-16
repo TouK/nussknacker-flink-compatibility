@@ -9,17 +9,18 @@ import io.confluent.kafka.serializers.{KafkaAvroDeserializer, KafkaAvroSerialize
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.flink.api.common.ExecutionConfig
+import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
 import org.scalatest.{FunSuiteLike, Matchers}
-import pl.touk.nussknacker.defaultmodel.DefaultConfigCreator
+import pl.touk.nussknacker.defaultmodel.{DefaultConfigCreator}
 import pl.touk.nussknacker.engine.api.CirceUtil.decodeJsonUnsafe
 import pl.touk.nussknacker.engine.api.process.ProcessObjectDependencies
 import pl.touk.nussknacker.engine.api.{JobData, ProcessVersion}
-import pl.touk.nussknacker.engine.avro._
-import pl.touk.nussknacker.engine.avro.encode.{BestEffortAvroEncoder, ValidationMode}
-import pl.touk.nussknacker.engine.avro.kryo.AvroSerializersRegistrar
-import pl.touk.nussknacker.engine.avro.schemaregistry.confluent.ConfluentUtils
-import pl.touk.nussknacker.engine.avro.schemaregistry.confluent.client.{MockConfluentSchemaRegistryClientFactory, MockSchemaRegistryClient}
-import pl.touk.nussknacker.engine.avro.schemaregistry.{ExistingSchemaVersion, LatestSchemaVersion, SchemaVersionOption}
+import pl.touk.nussknacker.engine.schemedkafka._
+import pl.touk.nussknacker.engine.schemedkafka.encode.{BestEffortAvroEncoder, ValidationMode}
+import pl.touk.nussknacker.engine.schemedkafka.kryo.AvroSerializersRegistrar
+import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.confluent.ConfluentUtils
+import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.confluent.client.{MockConfluentSchemaRegistryClientFactory, MockSchemaRegistryClient}
+import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.{ExistingSchemaVersion, LatestSchemaVersion, SchemaVersionOption}
 import pl.touk.nussknacker.engine.build.ScenarioBuilder
 import pl.touk.nussknacker.engine.deployment.DeploymentData
 import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder
@@ -39,7 +40,7 @@ import java.time.temporal.ChronoUnit
 
 /*
   This trait should be based on GenericITSpec:
-  https://github.com/TouK/nussknacker/blob/staging/engine/flink/generic/src/test/scala/pl/touk/nussknacker/genericmodel/GenericItSpec.scala
+  https://github.com/TouK/nussknacker/blob/staging/engine/flink/tests/src/test/scala/pl/touk/nussknacker/defaultmodel/GenericItSpec.scala
   Following changes are made ATM:
   - `extends FunSuite with FlinkSpec` replaced with `extends FunSuiteLike` ==> FlinkSpec to be defined for each compatibility version
   - flinkMiniCluster: FlinkMiniClusterHolder  ==> should be defined in Flink*Spec
@@ -56,11 +57,14 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
   import spel.Implicits._
 
   override lazy val config: Config = ConfigFactory.load()
-    .withValue("components.mockKafka.config.kafkaAddress", fromAnyRef(kafkaZookeeperServer.kafkaAddress))
+    .withValue("components.mockKafka.config.kafkaAddress", fromAnyRef(kafkaServer.kafkaAddress))
+    .withValue("components.mockKafka.config.lowLevelComponentsEnabled", fromAnyRef(true))
     .withValue("components.kafka.disabled", fromAnyRef(true))
     .withValue("components.mockKafka.disabled", fromAnyRef(false))
     .withValue("components.mockKafka.config.kafkaProperties.\"schema.registry.url\"", fromAnyRef("not_used"))
     // we turn off auto registration to do it on our own passing mocked schema registry client
+    //For tests we want to read from the beginning...
+    .withValue("components.mockKafka.config.kafkaProperties.\"auto.offset.reset\"", fromAnyRef("earliest"))
     .withValue(s"components.mockKafka.config.kafkaEspProperties.${AvroSerializersRegistrar.autoRegisterRecordSchemaIdSerializationProperty}", fromAnyRef(false))
     .withValue("rocksDB.checkpointDataUri", fromAnyRef("file:///tmp/rocksDBCheckpointDataUri"))
 
@@ -144,18 +148,18 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
       .source(
         "start",
         "kafka-registry-typed-json",
-        KafkaAvroBaseComponentTransformer.TopicParamName -> s"'${topicConfig.input}'",
-        KafkaAvroBaseComponentTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
+        KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.input}'",
+        KafkaUniversalComponentTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
       )
       .filter("name-filter", "#input.first == 'Jan'")
       .emptySink(
         "end",
         "kafka-registry-typed-json-raw",
-        KafkaAvroBaseComponentTransformer.SinkKeyParamName -> "",
-        KafkaAvroBaseComponentTransformer.SinkValueParamName -> "#input",
-        KafkaAvroBaseComponentTransformer.TopicParamName -> s"'${topicConfig.output}'",
-        KafkaAvroBaseComponentTransformer.SchemaVersionParamName -> s"'${SchemaVersionOption.LatestOptionName}'",
-        KafkaAvroBaseComponentTransformer.SinkValidationModeParameterName -> s"'${validationMode.name}'"
+        KafkaUniversalComponentTransformer.SinkKeyParamName -> "",
+        KafkaUniversalComponentTransformer.SinkValueParamName -> "#input",
+        KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.output}'",
+        KafkaUniversalComponentTransformer.SchemaVersionParamName -> s"'${SchemaVersionOption.LatestOptionName}'",
+        KafkaUniversalComponentTransformer.SinkValidationModeParameterName -> s"'${validationMode.name}'"
       )
 
   private def avroProcess(topicConfig: TopicConfig, versionOption: SchemaVersionOption, validationMode: ValidationMode = ValidationMode.strict) =
@@ -165,18 +169,18 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
       .source(
         "start",
         "kafka-avro",
-        KafkaAvroBaseComponentTransformer.TopicParamName -> s"'${topicConfig.input}'",
-        KafkaAvroBaseComponentTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
+        KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.input}'",
+        KafkaUniversalComponentTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
       )
       .filter("name-filter", "#input.first == 'Jan'")
       .emptySink(
         "end",
         "kafka-avro-raw",
-        KafkaAvroBaseComponentTransformer.SinkKeyParamName -> "",
-        KafkaAvroBaseComponentTransformer.SinkValueParamName -> "#input",
-        KafkaAvroBaseComponentTransformer.TopicParamName -> s"'${topicConfig.output}'",
-        KafkaAvroBaseComponentTransformer.SchemaVersionParamName -> s"'${SchemaVersionOption.LatestOptionName}'",
-        KafkaAvroBaseComponentTransformer.SinkValidationModeParameterName -> s"'${validationMode.name}'"
+        KafkaUniversalComponentTransformer.SinkKeyParamName -> "",
+        KafkaUniversalComponentTransformer.SinkValueParamName -> "#input",
+        KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.output}'",
+        KafkaUniversalComponentTransformer.SchemaVersionParamName -> s"'${SchemaVersionOption.LatestOptionName}'",
+        KafkaUniversalComponentTransformer.SinkValidationModeParameterName -> s"'${validationMode.name}'"
 
       )
 
@@ -187,17 +191,17 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
       .source(
         "start",
         "kafka-avro",
-        KafkaAvroBaseComponentTransformer.TopicParamName -> s"'${topicConfig.input}'",
-        KafkaAvroBaseComponentTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
+        KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.input}'",
+        KafkaUniversalComponentTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
       )
       .emptySink(
         "end",
         "kafka-avro-raw",
-        KafkaAvroBaseComponentTransformer.SinkKeyParamName -> "",
-        KafkaAvroBaseComponentTransformer.SinkValueParamName -> s"{first: #input.first, last: #input.last}",
-        KafkaAvroBaseComponentTransformer.TopicParamName -> s"'${topicConfig.output}'",
-        KafkaAvroBaseComponentTransformer.SinkValidationModeParameterName -> s"'${ValidationMode.strict.name}'",
-        KafkaAvroBaseComponentTransformer.SchemaVersionParamName -> "'1'"
+        KafkaUniversalComponentTransformer.SinkKeyParamName -> "",
+        KafkaUniversalComponentTransformer.SinkValueParamName -> s"{first: #input.first, last: #input.last}",
+        KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.output}'",
+        KafkaUniversalComponentTransformer.SinkValidationModeParameterName -> s"'${ValidationMode.strict.name}'",
+        KafkaUniversalComponentTransformer.SchemaVersionParamName -> "'1'"
       )
 
   private def versionOptionParam(versionOption: SchemaVersionOption) =
@@ -207,7 +211,7 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
     }
 
   test("should read json object from kafka, filter and save it to kafka, passing timestamp") {
-    val timeAgo = Instant.now().minus(10, ChronoUnit.DAYS).toEpochMilli
+    val timeAgo = Instant.now().minus(10, ChronoUnit.HOURS).toEpochMilli
 
     sendAsJson(givenNotMatchingJsonObj, JsonInTopic, timeAgo)
     sendAsJson(givenMatchingJsonObj, JsonInTopic, timeAgo)
@@ -234,14 +238,14 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
   }
 
   test("should read avro object from kafka, filter and save it to kafka, passing timestamp") {
-    val timeAgo = Instant.now().minus(10, ChronoUnit.DAYS).toEpochMilli
+    val timeAgo = Instant.now().minus(10, ChronoUnit.HOURS).toEpochMilli
 
     val topicConfig = createAndRegisterTopicConfig("read-filter-save-avro", RecordSchemas)
 
     sendAvro(givenNotMatchingAvroObj, topicConfig.input)
     sendAvro(givenMatchingAvroObj, topicConfig.input, timestamp = timeAgo)
 
-    run(avroProcess(topicConfig, ExistingSchemaVersion(1), validationMode = ValidationMode.allowOptional)) {
+    run(avroProcess(topicConfig, ExistingSchemaVersion(1), validationMode = ValidationMode.lax)) {
       val processed = consumeOneRawAvroMessage(topicConfig.output)
       processed.timestamp shouldBe timeAgo
       valueDeserializer.deserialize(topicConfig.output, processed.message()) shouldEqual givenMatchingAvroObjConvertedToV2
@@ -249,13 +253,13 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
   }
 
   test("should read schemed json from kafka, filter and save it to kafka, passing timestamp") {
-    val timeAgo = Instant.now().minus(10, ChronoUnit.DAYS).toEpochMilli
-
+    val timeAgo = Instant.now().minus(10, ChronoUnit.HOURS).toEpochMilli
     val topicConfig = createAndRegisterTopicConfig("read-filter-save-json", RecordSchemas)
 
-    sendAsJson(givenMatchingJsonObj, topicConfig.input, timeAgo)
+    val sendResult = sendAsJson(givenMatchingJsonObj, topicConfig.input, timeAgo).futureValue
+    logger.info(s"Message sent successful: $sendResult")
 
-    run(jsonSchemedProcess(topicConfig, ExistingSchemaVersion(1), validationMode = ValidationMode.allowOptional)) {
+    run(jsonSchemedProcess(topicConfig, ExistingSchemaVersion(1), validationMode = ValidationMode.lax)) {
       val consumer = kafkaClient.createConsumer()
       val processedMessage = consumer.consume(topicConfig.output, secondsToWaitForAvro).head
       processedMessage.timestamp shouldBe timeAgo
@@ -295,7 +299,7 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
     val converted = GenericData.get().deepCopy(RecordSchemaV2, givenMatchingAvroObjV2)
     converted.put("middle", null)
 
-    run(avroProcess(topicConfig, ExistingSchemaVersion(1), validationMode = ValidationMode.allowOptional)) {
+    run(avroProcess(topicConfig, ExistingSchemaVersion(1), validationMode = ValidationMode.lax)) {
       val processed = consumeOneAvroMessage(topicConfig.output)
       processed shouldEqual converted
     }
@@ -354,7 +358,7 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
     env.withJobRunning(process.id)(action)
   }
 
-  private def sendAvro(obj: Any, topic: String, timestamp: java.lang.Long = null) = {
+  protected def sendAvro(obj: Any, topic: String, timestamp: java.lang.Long = null) = {
     val serializedObj = valueSerializer.serialize(topic, obj)
     kafkaClient.sendRawMessage(topic, Array.empty, serializedObj, timestamp = timestamp)
   }
@@ -382,7 +386,7 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
     topicConfig
   }
 
-  private def createAndRegisterTopicConfig(name: String, schema: Schema): TopicConfig =
+  protected def createAndRegisterTopicConfig(name: String, schema: Schema): TopicConfig =
     createAndRegisterTopicConfig(name, List(schema))
 }
 
@@ -401,7 +405,7 @@ object MockSchemaRegistry extends Serializable {
   val RecordSchemaStringV1: String =
     """{
       |  "type": "record",
-      |  "namespace": "pl.touk.nussknacker.engine.avro",
+      |  "namespace": "pl.touk.nussknacker.engine.schemedkafka",
       |  "name": "FullName",
       |  "fields": [
       |    { "name": "first", "type": "string" },
@@ -415,7 +419,7 @@ object MockSchemaRegistry extends Serializable {
   val RecordSchemaStringV2: String =
     """{
       |  "type": "record",
-      |  "namespace": "pl.touk.nussknacker.engine.avro",
+      |  "namespace": "pl.touk.nussknacker.engine.schemedkafka",
       |  "name": "FullName",
       |  "fields": [
       |    { "name": "first", "type": "string" },
@@ -432,7 +436,7 @@ object MockSchemaRegistry extends Serializable {
   val SecondRecordSchemaStringV1: String =
     """{
       |  "type": "record",
-      |  "namespace": "pl.touk.nussknacker.engine.avro",
+      |  "namespace": "pl.touk.nussknacker.engine.schemedkafka",
       |  "name": "FullName",
       |  "fields": [
       |    { "name": "firstname", "type": "string" }

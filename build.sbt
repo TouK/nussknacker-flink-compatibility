@@ -1,4 +1,5 @@
 import sbt.Keys._
+import sbtassembly.AssemblyPlugin.autoImport
 import sbtassembly.AssemblyPlugin.autoImport.assembly
 import sbtassembly.{MergeStrategy, PathList}
 
@@ -11,9 +12,15 @@ val scalaCollectionsCompatV = "2.3.2"
 val silencerV_2_12 = "1.6.0"
 val silencerV = "1.7.0"
 
+val flink111V = "1.11.3"
+val flink113V = "1.13.3"
+val currentFlinkV = "1.14.3"
+val sttpV = "2.2.9"
+val kafkaV = "2.8.1"
+
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val nussknackerV = "1.4.0"
+val nussknackerV = "1.5.0"
 
 val scalaTestV = "3.0.8"
 
@@ -57,11 +64,6 @@ def commonSettings(scalaV: String) =
     assembly / test := {}
   )
 
-val flink111V = "1.11.3"
-val flink113V = "1.13.3"
-val currentFlinkV = "1.14.3"
-val sttpV = "2.2.9"
-
 //Here we use Flink version from Nussknacker, in each compatibility provider it will be overridden.
 lazy val commonTest = (project in file("commonTest")).
   settings(commonSettings(scala212V)).
@@ -69,7 +71,7 @@ lazy val commonTest = (project in file("commonTest")).
     name := "commonTest",
     libraryDependencies ++= Seq(
       "pl.touk.nussknacker" %% "nussknacker-default-model" % nussknackerV,
-      "pl.touk.nussknacker" %% "nussknacker-flink-avro-components-utils" % nussknackerV,
+      "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-kafka-test-utils" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV,
@@ -85,7 +87,7 @@ lazy val flink111ModelCompat = (project in file("flink111/model")).
     libraryDependencies ++= deps(flink111V),
     dependencyOverrides ++= flinkOverrides(flink111V) ++ Seq(
       //???
-      "org.apache.kafka" % "kafka-clients" % "2.4.1",
+      "org.apache.kafka" % "kafka-clients" % kafkaV,
     )
   ).dependsOn(commonTest % "test")
 
@@ -100,7 +102,7 @@ lazy val flink111ManagerCompat = (project in file("flink111/manager")).
     dependencyOverrides ++= flinkOverrides(flink111V) ++ Seq(
       //For some strange reason, docker client libraries have conflict with schema registry client :/
       "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
-      "org.apache.kafka" % "kafka-clients" % "2.4.1",
+      "org.apache.kafka" % "kafka-clients" % kafkaV,
       // must be the same as used by flink - otherwise it is evicted by version from deployment-manager-api
       "com.typesafe.akka" %% "akka-actor" % "2.5.21"
     ),
@@ -174,6 +176,8 @@ def nussknackerAssemblyStrategy: String => MergeStrategy = {
   case PathList("org", "apache", "commons", "collections", ps) if ps.contains("FastHashMap") || ps == "ArrayStack.class" => MergeStrategy.first
   case PathList(ps@_*) if ps.last.matches("FlinkMetricsProviderForScenario.*.class") => MergeStrategy.first
   case PathList(ps@_*) if ps.last == "MetricUtils.class" => MergeStrategy.first
+  case PathList(ps@_*) if ps.head == "draftv4" && ps.last == "schema" => MergeStrategy.first //Due to swagger-parser dependencies having different schema definitions
+
 
   case x => MergeStrategy.defaultMergeStrategy(x)
 }

@@ -91,7 +91,7 @@ class TestCreator(assigner: Option[TimestampWatermarkHandler[String]]) extends E
 
   override def sourceFactories(processObjectDependencies: ProcessObjectDependencies): Map[String, WithCategories[SourceFactory]] = {
     Map("source" -> WithCategories(SourceFactory.noParam[String](
-      new CollectionSource[String](new ExecutionConfig, List(""), assigner, Typed[String]))))
+      new CollectionSource[String](List(""), assigner, Typed[String]))))
   }
 
 
