@@ -1,5 +1,23 @@
 name: Build
-on: [push, pull_request]
+
+on: 
+  push:
+    branches:
+      - main
+      - staging
+  pull_request:
+    branches:
+      - main
+      - staging
+  workflow_dispatch:
+    inputs:
+      nussknacker_version:
+        description: "Nussknacker version"
+        required: false
+        type: string
+
+env:
+  NUSSKNACKER_VERSION: ${{ inputs.nussknacker_version }}
 
 jobs:
   tests:

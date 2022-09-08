@@ -20,7 +20,13 @@ val kafkaV = "2.8.1"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val nussknackerV = "1.5.0"
+val defaultNussknackerV = "1.5.0" 
+
+val nussknackerV = {
+  val v = sys.env.get("NUSSKNACKER_VERSION").filterNot(_.isBlank).getOrElse(defaultNussknackerV)
+  println(s"Nussknacker version: $v")
+  v
+}
 
 val scalaTestV = "3.0.8"
 
@@ -28,7 +34,8 @@ def commonSettings(scalaV: String) =
   Seq(
     organization := "pl.touk.nussknacker.flinkcompatibility",
     resolvers ++= Seq(
-      "Sonatype snaphots" at "https://oss.sonatype.org/content/groups/public/",
+      Resolver.sonatypeRepo("public"),
+      Opts.resolver.sonatypeSnapshots,
       "confluent" at "https://packages.confluent.io/maven",
       "nexus" at sys.env.getOrElse("nexus", "https://nexus.touk.pl/nexus/content/groups/public")
     ),
