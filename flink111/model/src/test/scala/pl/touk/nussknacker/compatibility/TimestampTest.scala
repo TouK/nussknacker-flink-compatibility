@@ -1,6 +1,6 @@
 package pl.touk.nussknacker.compatibility
 
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 import pl.touk.nussknacker.compatibility.common.BaseTimestampTest
 import pl.touk.nussknacker.compatibility.flink111.Flink111Spec
 

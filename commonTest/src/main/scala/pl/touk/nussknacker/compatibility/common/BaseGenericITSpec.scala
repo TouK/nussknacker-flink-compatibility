@@ -10,8 +10,9 @@ import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.flink.api.common.ExecutionConfig
 import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
-import org.scalatest.{FunSuiteLike, Matchers}
-import pl.touk.nussknacker.defaultmodel.{DefaultConfigCreator}
+import org.scalatest.funsuite.AnyFunSuiteLike
+import org.scalatest.matchers.should.Matchers
+import pl.touk.nussknacker.defaultmodel.DefaultConfigCreator
 import pl.touk.nussknacker.engine.api.CirceUtil.decodeJsonUnsafe
 import pl.touk.nussknacker.engine.api.process.ProcessObjectDependencies
 import pl.touk.nussknacker.engine.api.{JobData, ProcessVersion}
@@ -47,7 +48,7 @@ import java.time.temporal.ChronoUnit
   - `def creator: GenericConfigCreator` made protected
   - checkpointDataUri config added
  */
-trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with LazyLogging {
+trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec with LazyLogging {
 
   protected def flinkMiniCluster: FlinkMiniClusterHolder
 

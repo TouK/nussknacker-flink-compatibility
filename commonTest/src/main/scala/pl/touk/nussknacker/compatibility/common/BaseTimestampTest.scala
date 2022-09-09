@@ -4,12 +4,13 @@ import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory.fromAnyRef
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.streaming.api.functions.{AssignerWithPunctuatedWatermarks, KeyedProcessFunction}
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment, createTypeInformation}
 import org.apache.flink.streaming.api.watermark.Watermark
 import org.apache.flink.util.Collector
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuiteLike, Matchers}
+import org.scalatest.funsuite.AnyFunSuiteLike
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import pl.touk.nussknacker.engine.api._
 import pl.touk.nussknacker.engine.api.process._
 import pl.touk.nussknacker.engine.api.typed.typing.Typed
@@ -30,7 +31,7 @@ import pl.touk.nussknacker.test.VeryPatientScalaFutures
 import scala.annotation.nowarn
 
 //This test checks if handling of setTimeCharacteristic based of TimestampAssigner presence works well after removal from Nussknacker
-trait BaseTimestampTest extends FunSuiteLike with BeforeAndAfterAll with BeforeAndAfter with Matchers with VeryPatientScalaFutures with LazyLogging {
+trait BaseTimestampTest extends AnyFunSuiteLike with BeforeAndAfterAll with BeforeAndAfter with Matchers with VeryPatientScalaFutures with LazyLogging {
 
   protected def flinkMiniCluster: FlinkMiniClusterHolder
 
