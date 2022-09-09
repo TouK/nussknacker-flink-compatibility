@@ -13,7 +13,6 @@ val silencerV_2_12 = "1.6.0"
 val silencerV = "1.7.0"
 
 val flink111V = "1.11.3"
-val flink113V = "1.13.3"
 val currentFlinkV = "1.14.3"
 val sttpV = "2.2.9"
 val kafkaV = "2.8.1"

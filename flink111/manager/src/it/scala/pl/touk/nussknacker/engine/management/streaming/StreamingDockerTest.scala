@@ -3,7 +3,8 @@ package pl.touk.nussknacker.engine.management.streaming
 import akka.actor.ActorSystem
 import com.whisk.docker.DockerContainer
 import org.asynchttpclient.DefaultAsyncHttpClientConfig
-import org.scalatest.{Assertion, Matchers, Suite}
+import org.scalatest.{Assertion, Suite}
+import org.scalatest.matchers.should.Matchers
 import pl.touk.nussknacker.engine.api.ProcessVersion
 import pl.touk.nussknacker.engine.api.deployment.{DeploymentManager, ProcessingTypeDeploymentService, ProcessingTypeDeploymentServiceStub}
 import pl.touk.nussknacker.engine.api.process.ProcessName

@@ -16,6 +16,7 @@ import pl.touk.nussknacker.engine.deployment.User
 import pl.touk.nussknacker.engine.util.config.ScalaMajorVersionConfig
 
 import java.io.File
+import java.nio.charset.StandardCharsets
 import java.nio.file.attribute.{PosixFilePermission, PosixFilePermissions}
 import java.nio.file.{Files, Path}
 import java.util.Collections
@@ -43,9 +44,9 @@ trait DockerTest extends DockerTestKit with ScalaFutures with Eventually with La
     val dirFile = dir.toFile
 
     List("Dockerfile", "entrypointWithIP.sh", "conf.yml").foreach { file =>
-      val resource = IOUtils.toString(getClass.getResourceAsStream(s"/docker/$file"))
+      val resource = IOUtils.toString(getClass.getResourceAsStream(s"/docker/$file"), StandardCharsets.UTF_8)
       val withVersionReplaced = resource.replace("${scala.major.version}", ScalaMajorVersionConfig.scalaMajorVersion)
-      FileUtils.writeStringToFile(new File(dirFile, file), withVersionReplaced)
+      FileUtils.writeStringToFile(new File(dirFile, file), withVersionReplaced, StandardCharsets.UTF_8)
     }
 
     client.build(dir, flinkEsp)
