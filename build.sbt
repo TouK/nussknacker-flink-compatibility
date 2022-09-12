@@ -124,7 +124,7 @@ lazy val flink114ModelCompat = (project in file("flink114/model")).
   settings(commonSettings(scala212V)).
   settings(flinkExclusionsForBefore1_14).
   settings(
-    name := "flink111-model",
+    name := "flink114-model",
     libraryDependencies ++= deps(flink114V),
     dependencyOverrides ++= flinkOverrides(flink114V) ++ Seq(
       //???
