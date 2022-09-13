@@ -79,10 +79,10 @@ lazy val commonTest = (project in file("commonTest")).
     name := "commonTest",
     libraryDependencies ++= Seq(
       "pl.touk.nussknacker" %% "nussknacker-default-model" % nussknackerV,
-      "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV exclude("org.apache.flink", "flink-streaming-java"),
+      "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-kafka-test-utils" % nussknackerV,
-      "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV exclude("org.apache.flink", "flink-streaming-java"),
-      "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV exclude("org.apache.flink", "flink-streaming-java"),
+      "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV,
+      "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV,
       "org.apache.flink" %% "flink-streaming-scala" % currentFlinkV % "provided",
     )
   )
@@ -125,6 +125,9 @@ lazy val flink114ModelCompat = (project in file("flink114/model")).
   settings(
     name := "flink114-model",
     libraryDependencies ++= deps(flink114V),
+    excludeDependencies ++= Seq(
+      ExclusionRule("org.apache.flink", "flink-streaming-java")
+    ),
     dependencyOverrides ++= flinkOverrides(flink114V) ++ Seq(
       //???
       "org.apache.kafka" % "kafka-clients" % kafkaV
@@ -138,6 +141,9 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager")).
   settings(
     name := "flink114-manager",
     libraryDependencies ++= managerDeps(flink114V),
+    excludeDependencies ++= Seq(
+      ExclusionRule("org.apache.flink", "flink-streaming-java")
+    ),
     dependencyOverrides ++= flinkOverrides(flink114V) ++ Seq(
       //For some strange reason, docker client libraries have conflict with schema registry client :/
       "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
