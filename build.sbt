@@ -83,6 +83,7 @@ lazy val commonTest = (project in file("commonTest")).
       "pl.touk.nussknacker" %% "nussknacker-kafka-test-utils" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV exclude("org.apache.flink", "flink-streaming-java"),
       "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV exclude("org.apache.flink", "flink-streaming-java"),
+      "org.apache.flink" %% "flink-streaming-scala" % currentFlinkV % "provided",
     )
   )
 
@@ -149,14 +150,17 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager")).
     ).value,
   ).dependsOn(commonTest % "test")
 
-
 def managerDeps(version: String) = Seq(
   "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV exclude("org.apache.flink", "flink-streaming-java"),
   "pl.touk.nussknacker" %% "nussknacker-http-utils" % nussknackerV % "provided,it,test",
   "pl.touk.nussknacker" %% "nussknacker-interpreter" % nussknackerV % "provided,it,test",
   "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
-  "pl.touk.nussknacker" %% "nussknacker-kafka-test-utils" % nussknackerV % "it,test",
 
+  "pl.touk.nussknacker" %% "nussknacker-kafka-test-utils" % nussknackerV % "it,test",
+  "org.apache.flink" %% "flink-streaming-scala" % version excludeAll(
+    ExclusionRule("log4j", "log4j"),
+    ExclusionRule("org.slf4j", "slf4j-log4j12")
+  ),
   "com.whisk" %% "docker-testkit-scalatest" % "0.9.0" % "it,test",
   "com.whisk" %% "docker-testkit-impl-spotify" % "0.9.0" % "it,test",
   "com.softwaremill.sttp.client" %% "async-http-client-backend-future" % sttpV,
@@ -170,6 +174,7 @@ val flinkExclusionsForBefore1_14 = Seq(
 )
 
 def deps(version: String) = Seq(
+  "org.apache.flink" %% "flink-streaming-scala" % version % "provided",
   "pl.touk.nussknacker" %% "nussknacker-default-model" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-kafka-components" % nussknackerV exclude("org.apache.flink", "flink-streaming-java"),
   "pl.touk.nussknacker" %% "nussknacker-flink-base-components" % nussknackerV exclude("org.apache.flink", "flink-streaming-java"),
