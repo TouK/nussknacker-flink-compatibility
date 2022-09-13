@@ -43,7 +43,8 @@ trait BaseTimestampTest extends AnyFunSuiteLike with BeforeAndAfterAll with Befo
     //we check if ingestion time is used (processingTime would not fire eventTime timer)
     runWithAssigner(None)
 
-    //5 seconds should be enough to run this test...
+    //5 seconds should be enough to run this test...-
+    Thread.sleep(10000)
     SinkForLongs.data.head.toDouble shouldBe (System.currentTimeMillis().toDouble +- 5000)
   }
 
@@ -52,6 +53,8 @@ trait BaseTimestampTest extends AnyFunSuiteLike with BeforeAndAfterAll with Befo
     val customFixedTime = System.currentTimeMillis() + 1000000
 
     runWithAssigner(Some(new LegacyTimestampWatermarkHandler[String](new FixedWatermarks(customFixedTime))))
+
+    Thread.sleep(10000)
     SinkForLongs.data shouldBe List(customFixedTime + CheckTimeTransformer.timeToAdd)
   }
 

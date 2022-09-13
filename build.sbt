@@ -13,15 +13,15 @@ val silencerV_2_12 = "1.6.0"
 val silencerV = "1.7.0"
 
 val flink111V = "1.11.3"
-val flink114V = "1.11.3"
-val currentFlinkV = "1.14.5"
+val flink114V = "1.14.5"
+val currentFlinkV = "1.15.2"
 val sttpV = "2.2.9"
 val kafkaV = "2.8.1"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
 //val defaultNussknackerV = "1.5.0" 
-val defaultNussknackerV = "1.6.0-staging-2022-09-07-9380-bd727e1b9dc427b48f196a049d9265e607b9d3de-SNAPSHOT" 
+val defaultNussknackerV = "1.6.0-staging-2022-09-12-9438-7b56cf6041a1a5308e848e1b6829c3a6043f0eaa-SNAPSHOT"
 
 val nussknackerV = {
   val v = sys.env.get("NUSSKNACKER_VERSION").filterNot(_.isBlank).getOrElse(defaultNussknackerV)
@@ -122,7 +122,6 @@ lazy val commonTest = (project in file("commonTest")).
 
 lazy val flink114ModelCompat = (project in file("flink114/model")).
   settings(commonSettings(scala212V)).
-  settings(flinkExclusionsForBefore1_14).
   settings(
     name := "flink114-model",
     libraryDependencies ++= deps(flink114V),
@@ -136,9 +135,8 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager")).
   settings(commonSettings(scala212V)).
   configs(IntegrationTest).
   settings(Defaults.itSettings).
-  settings(flinkExclusionsForBefore1_14).
   settings(
-    name := "flink111-manager",
+    name := "flink114-manager",
     libraryDependencies ++= managerDeps(flink114V),
     dependencyOverrides ++= flinkOverrides(flink114V) ++ Seq(
       //For some strange reason, docker client libraries have conflict with schema registry client :/
