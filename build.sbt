@@ -92,13 +92,8 @@ lazy val flink114ModelCompat = (project in file("flink114/model")).
   settings(
     name := "flink114-model",
     libraryDependencies ++= deps(flink114V) ++ depsCommonFlink1_14,
-    dependencyOverrides ++= flinkOverrides(flink114V) ++ Seq(
-      "org.apache.kafka" % "kafka-clients" % kafkaV,
-      "org.apache.flink" %% "flink-connector-kafka" % flink114V,
-      "org.apache.flink" % "flink-core" % flink114V,
-      "org.apache.flink" % "flink-java" % flink114V,
-      "org.apache.flink" % "flink-runtime" % flink114V,
-      "org.apache.flink" %% "flink-test-utils" % flink114V
+    dependencyOverrides ++= flinkOverrides(flink114V) ++ depsCommonFlink1_14 ++ Seq(
+      "org.apache.kafka" % "kafka-clients" % kafkaV
     ),
   ).dependsOn(commonTest)
 
@@ -110,17 +105,12 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager")).
   settings(
     name := "flink114-manager",
     libraryDependencies ++= managerDeps(flink114V) ++ depsCommonFlink1_14,
-    dependencyOverrides ++= flinkOverrides(flink114V) ++ Seq(
+    dependencyOverrides ++= flinkOverrides(flink114V) ++ depsCommonFlink1_14 ++ Seq(
       //For some strange reason, docker client libraries have conflict with schema registry client :/
       "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
       "org.apache.kafka" % "kafka-clients" % kafkaV,
       // must be the same as used by flink - otherwise it is evicted by version from deployment-manager-api
       "com.typesafe.akka" %% "akka-actor" % "2.5.21",
-      "org.apache.flink" %% "flink-connector-kafka" % flink114V,
-      "org.apache.flink" % "flink-core" % flink114V,
-      "org.apache.flink" % "flink-java" % flink114V,
-      "org.apache.flink" % "flink-runtime" % flink114V,
-      "org.apache.flink" %% "flink-test-utils" % flink114V
     ),
     IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
       flink114ModelCompat / Compile / assembly
@@ -153,6 +143,14 @@ val flinkExclusionsFor1_14 = Seq(
 )
 
 def depsCommonFlink1_14 = Seq(
+  "org.apache.flink" %% "flink-connector-kafka" % flink114V,
+  "org.apache.flink" % "flink-core" % flink114V,
+  "org.apache.flink" % "flink-java" % flink114V,
+  "org.apache.flink" % "flink-runtime" % flink114V,
+  "org.apache.flink" %% "flink-test-utils" % flink114V
+)
+
+def overridesCommonFlink1_14 = Seq(
   "org.apache.flink" %% "flink-connector-kafka" % flink114V,
   "org.apache.flink" % "flink-core" % flink114V,
   "org.apache.flink" % "flink-java" % flink114V,
