@@ -12,14 +12,14 @@ val scalaCollectionsCompatV = "2.3.2"
 val silencerV_2_12 = "1.6.0"
 val silencerV = "1.7.0"
 
-val flink111V = "1.14.5"
+val flink114V = "1.14.5"
 val currentFlinkV = "1.15.2"
 val sttpV = "2.2.9"
 val kafkaV = "2.8.1"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-//val defaultNussknackerV = "1.5.0" 
+//val defaultNussknackerV = "1.5.0"
 val defaultNussknackerV = "1.6.0-staging-2022-09-13-9442-41b5521725718a4a5ede8ced454efdd445c430b9-SNAPSHOT"
 
 val nussknackerV = {
@@ -86,24 +86,24 @@ lazy val commonTest = (project in file("commonTest")).
     )
   )
 
-lazy val flink111ModelCompat = (project in file("flink111/model")).
+lazy val flink114ModelCompat = (project in file("flink114/model")).
   settings(commonSettings(scala212V)).
   settings(
-    name := "flink111-model",
-    libraryDependencies ++= deps(flink111V) ++ Seq(
-      "org.apache.flink" %% "flink-connector-kafka" % flink111V,
-      "org.apache.flink" % "flink-core" % flink111V,
-      "org.apache.flink" % "flink-java" % flink111V,
-      "org.apache.flink" % "flink-runtime" % flink111V,
-      "org.apache.flink" %% "flink-test-utils" % flink111V
+    name := "flink114-model",
+    libraryDependencies ++= deps(flink114V) ++ Seq(
+      "org.apache.flink" %% "flink-connector-kafka" % flink114V,
+      "org.apache.flink" % "flink-core" % flink114V,
+      "org.apache.flink" % "flink-java" % flink114V,
+      "org.apache.flink" % "flink-runtime" % flink114V,
+      "org.apache.flink" %% "flink-test-utils" % flink114V
     ),
-    dependencyOverrides ++= flinkOverrides(flink111V) ++ Seq(
+    dependencyOverrides ++= flinkOverrides(flink114V) ++ Seq(
       "org.apache.kafka" % "kafka-clients" % kafkaV,
-      "org.apache.flink" %% "flink-connector-kafka" % flink111V,
-      "org.apache.flink" % "flink-core" % flink111V,
-      "org.apache.flink" % "flink-java" % flink111V,
-      "org.apache.flink" % "flink-runtime" % flink111V,
-      "org.apache.flink" %% "flink-test-utils" % flink111V
+      "org.apache.flink" %% "flink-connector-kafka" % flink114V,
+      "org.apache.flink" % "flink-core" % flink114V,
+      "org.apache.flink" % "flink-java" % flink114V,
+      "org.apache.flink" % "flink-runtime" % flink114V,
+      "org.apache.flink" %% "flink-test-utils" % flink114V
     ),
     excludeDependencies ++= Seq(
       "org.apache.flink" % "flink-streaming-java",
@@ -113,30 +113,30 @@ lazy val flink111ModelCompat = (project in file("flink111/model")).
     )
   ).dependsOn(commonTest)
 
-lazy val flink111ManagerCompat = (project in file("flink111/manager")).
+lazy val flink114ManagerCompat = (project in file("flink114/manager")).
   settings(commonSettings(scala212V)).
   configs(IntegrationTest).
   settings(Defaults.itSettings).
   settings(
-    name := "flink111-manager",
-    libraryDependencies ++= managerDeps(flink111V) ++ Seq(
-      "org.apache.flink" %% "flink-connector-kafka" % flink111V,
-      "org.apache.flink" % "flink-core" % flink111V,
-      "org.apache.flink" % "flink-java" % flink111V,
-      "org.apache.flink" % "flink-runtime" % flink111V,
-      "org.apache.flink" %% "flink-test-utils" % flink111V
+    name := "flink114-manager",
+    libraryDependencies ++= managerDeps(flink114V) ++ Seq(
+      "org.apache.flink" %% "flink-connector-kafka" % flink114V,
+      "org.apache.flink" % "flink-core" % flink114V,
+      "org.apache.flink" % "flink-java" % flink114V,
+      "org.apache.flink" % "flink-runtime" % flink114V,
+      "org.apache.flink" %% "flink-test-utils" % flink114V
     ),
-    dependencyOverrides ++= flinkOverrides(flink111V) ++ Seq(
+    dependencyOverrides ++= flinkOverrides(flink114V) ++ Seq(
       //For some strange reason, docker client libraries have conflict with schema registry client :/
       "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
       "org.apache.kafka" % "kafka-clients" % kafkaV,
       // must be the same as used by flink - otherwise it is evicted by version from deployment-manager-api
       "com.typesafe.akka" %% "akka-actor" % "2.5.21",
-      "org.apache.flink" %% "flink-connector-kafka" % flink111V,
-      "org.apache.flink" % "flink-core" % flink111V,
-      "org.apache.flink" % "flink-java" % flink111V,
-      "org.apache.flink" % "flink-runtime" % flink111V,
-      "org.apache.flink" %% "flink-test-utils" % flink111V
+      "org.apache.flink" %% "flink-connector-kafka" % flink114V,
+      "org.apache.flink" % "flink-core" % flink114V,
+      "org.apache.flink" % "flink-java" % flink114V,
+      "org.apache.flink" % "flink-runtime" % flink114V,
+      "org.apache.flink" %% "flink-test-utils" % flink114V
     ),
     excludeDependencies ++= Seq(
       "org.apache.flink" % "flink-streaming-java",
@@ -145,7 +145,7 @@ lazy val flink111ManagerCompat = (project in file("flink111/manager")).
       "org.apache.flink" % "flink-test-utils"
     ),
     IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
-      flink111ModelCompat / Compile / assembly
+      flink114ModelCompat / Compile / assembly
     ).value,
   ).dependsOn(commonTest % "test")
 

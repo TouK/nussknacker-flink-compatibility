@@ -30,7 +30,7 @@ trait DockerTest extends DockerTestKit with ScalaFutures with Eventually with La
 
   final override implicit def patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(2, Minutes)), interval = scaled(Span(100, Millis)))
 
-  private val flinkEsp = s"flinkesp:1.11.2-scala_${ScalaMajorVersionConfig.scalaMajorVersion}"
+  private val flinkEsp = s"flinkesp:1.14.5-scala_${ScalaMajorVersionConfig.scalaMajorVersion}"
 
   private val client: DockerClient = DefaultDockerClient.fromEnv().build()
 
