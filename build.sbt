@@ -88,15 +88,10 @@ lazy val commonTest = (project in file("commonTest")).
 
 lazy val flink114ModelCompat = (project in file("flink114/model")).
   settings(commonSettings(scala212V)).
+  settings(flinkExclusionsFor1_14).
   settings(
     name := "flink114-model",
-    libraryDependencies ++= deps(flink114V) ++ Seq(
-      "org.apache.flink" %% "flink-connector-kafka" % flink114V,
-      "org.apache.flink" % "flink-core" % flink114V,
-      "org.apache.flink" % "flink-java" % flink114V,
-      "org.apache.flink" % "flink-runtime" % flink114V,
-      "org.apache.flink" %% "flink-test-utils" % flink114V
-    ),
+    libraryDependencies ++= deps(flink114V) ++ depsCommonFlink1_14,
     dependencyOverrides ++= flinkOverrides(flink114V) ++ Seq(
       "org.apache.kafka" % "kafka-clients" % kafkaV,
       "org.apache.flink" %% "flink-connector-kafka" % flink114V,
@@ -105,27 +100,16 @@ lazy val flink114ModelCompat = (project in file("flink114/model")).
       "org.apache.flink" % "flink-runtime" % flink114V,
       "org.apache.flink" %% "flink-test-utils" % flink114V
     ),
-    excludeDependencies ++= Seq(
-      "org.apache.flink" % "flink-streaming-java",
-      "org.apache.flink" % "flink-statebackend-rocksdb",
-      "org.apache.flink" % "flink-connector-kafka",
-      "org.apache.flink" % "flink-test-utils"
-    )
   ).dependsOn(commonTest)
 
 lazy val flink114ManagerCompat = (project in file("flink114/manager")).
   settings(commonSettings(scala212V)).
   configs(IntegrationTest).
   settings(Defaults.itSettings).
+  settings(flinkExclusionsFor1_14).
   settings(
     name := "flink114-manager",
-    libraryDependencies ++= managerDeps(flink114V) ++ Seq(
-      "org.apache.flink" %% "flink-connector-kafka" % flink114V,
-      "org.apache.flink" % "flink-core" % flink114V,
-      "org.apache.flink" % "flink-java" % flink114V,
-      "org.apache.flink" % "flink-runtime" % flink114V,
-      "org.apache.flink" %% "flink-test-utils" % flink114V
-    ),
+    libraryDependencies ++= managerDeps(flink114V) ++ depsCommonFlink1_14,
     dependencyOverrides ++= flinkOverrides(flink114V) ++ Seq(
       //For some strange reason, docker client libraries have conflict with schema registry client :/
       "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
@@ -137,12 +121,6 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager")).
       "org.apache.flink" % "flink-java" % flink114V,
       "org.apache.flink" % "flink-runtime" % flink114V,
       "org.apache.flink" %% "flink-test-utils" % flink114V
-    ),
-    excludeDependencies ++= Seq(
-      "org.apache.flink" % "flink-streaming-java",
-      "org.apache.flink" % "flink-statebackend-rocksdb",
-      "org.apache.flink" % "flink-connector-kafka",
-      "org.apache.flink" % "flink-test-utils"
     ),
     IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
       flink114ModelCompat / Compile / assembly
@@ -165,11 +143,21 @@ def managerDeps(version: String) = Seq(
   "com.softwaremill.sttp.client" %% "async-http-client-backend-future" % sttpV,
 )
 
-val flinkExclusionsForBefore1_14 = Seq(
+val flinkExclusionsFor1_14 = Seq(
   excludeDependencies ++= List(
-    "org.apache.flink" % "flink-runtime",
-    "org.apache.flink" % "flink-queryable-state-runtime"
+    "org.apache.flink" % "flink-streaming-java",
+    "org.apache.flink" % "flink-statebackend-rocksdb",
+    "org.apache.flink" % "flink-connector-kafka",
+    "org.apache.flink" % "flink-test-utils"
   )
+)
+
+def depsCommonFlink1_14 = Seq(
+  "org.apache.flink" %% "flink-connector-kafka" % flink114V,
+  "org.apache.flink" % "flink-core" % flink114V,
+  "org.apache.flink" % "flink-java" % flink114V,
+  "org.apache.flink" % "flink-runtime" % flink114V,
+  "org.apache.flink" %% "flink-test-utils" % flink114V
 )
 
 def deps(version: String) = Seq(
