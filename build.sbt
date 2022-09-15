@@ -12,6 +12,7 @@ val scalaCollectionsCompatV = "2.3.2"
 val silencerV_2_12 = "1.6.0"
 val silencerV = "1.7.0"
 
+val flink111V = "1.11.3"
 val flink114V = "1.14.5"
 val currentFlinkV = "1.15.2"
 val sttpV = "2.2.9"
@@ -19,7 +20,6 @@ val kafkaV = "2.8.1"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-//val defaultNussknackerV = "1.5.0"
 val defaultNussknackerV = "1.6.0-staging-2022-09-13-9442-41b5521725718a4a5ede8ced454efdd445c430b9-SNAPSHOT"
 
 val nussknackerV = {
@@ -86,13 +86,48 @@ lazy val commonTest = (project in file("commonTest")).
     )
   )
 
+lazy val flink111ModelCompat = (project in file("flink111/model")).
+  settings(commonSettings(scala212V)).
+  settings(flinkExclusionsForBefore1_14).
+  settings(flinkExclusionsForBefore1_15).
+  settings(
+    name := "flink111-model",
+    libraryDependencies ++= deps(flink111V) ++ flinkDependenciesCommonForBefore1_15(flink111V),
+    dependencyOverrides ++= flinkOverrides(flink111V) ++ flinkOverridesCommonForBefore1_15(flink111V) ++ Seq(
+      //???
+      "org.apache.kafka" % "kafka-clients" % kafkaV,
+    )
+  ).dependsOn(commonTest % "test")
+
+lazy val flink111ManagerCompat = (project in file("flink111/manager")).
+  settings(commonSettings(scala212V)).
+  configs(IntegrationTest).
+  settings(Defaults.itSettings).
+  settings(flinkExclusionsForBefore1_14).
+  settings(flinkExclusionsForBefore1_15).
+  settings(
+    name := "flink111-manager",
+    libraryDependencies ++= managerDeps(flink111V) ++ flinkDependenciesCommonForBefore1_15(flink111V),
+    dependencyOverrides ++= flinkOverrides(flink111V) ++ flinkOverridesCommonForBefore1_15(flink111V) ++ Seq(
+      //For some strange reason, docker client libraries have conflict with schema registry client :/
+      "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
+      "org.apache.kafka" % "kafka-clients" % kafkaV,
+      // must be the same as used by flink - otherwise it is evicted by version from deployment-manager-api
+      "com.typesafe.akka" %% "akka-actor" % "2.5.21"
+    ),
+    IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
+      flink111ModelCompat / Compile / assembly
+    ).value,
+  ).dependsOn(commonTest % "test")
+
+
 lazy val flink114ModelCompat = (project in file("flink114/model")).
   settings(commonSettings(scala212V)).
-  settings(flinkExclusionsFor1_14).
+  settings(flinkExclusionsForBefore1_15).
   settings(
     name := "flink114-model",
-    libraryDependencies ++= deps(flink114V) ++ depsCommonFlink1_14,
-    dependencyOverrides ++= flinkOverrides(flink114V) ++ depsCommonFlink1_14 ++ Seq(
+    libraryDependencies ++= deps(flink114V) ++ flinkDependenciesCommonForBefore1_15(flink114V),
+    dependencyOverrides ++= flinkOverrides(flink114V) ++ flinkOverridesCommonForBefore1_15(flink114V) ++ Seq(
       "org.apache.kafka" % "kafka-clients" % kafkaV
     ),
   ).dependsOn(commonTest)
@@ -101,11 +136,11 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager")).
   settings(commonSettings(scala212V)).
   configs(IntegrationTest).
   settings(Defaults.itSettings).
-  settings(flinkExclusionsFor1_14).
+  settings(flinkExclusionsForBefore1_15).
   settings(
     name := "flink114-manager",
-    libraryDependencies ++= managerDeps(flink114V) ++ depsCommonFlink1_14,
-    dependencyOverrides ++= flinkOverrides(flink114V) ++ depsCommonFlink1_14 ++ Seq(
+    libraryDependencies ++= managerDeps(flink114V) ++ flinkDependenciesCommonForBefore1_15(flink114V),
+    dependencyOverrides ++= flinkOverrides(flink114V) ++ flinkOverridesCommonForBefore1_15(flink114V) ++ Seq(
       //For some strange reason, docker client libraries have conflict with schema registry client :/
       "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
       "org.apache.kafka" % "kafka-clients" % kafkaV,
@@ -116,6 +151,33 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager")).
       flink114ModelCompat / Compile / assembly
     ).value,
   ).dependsOn(commonTest % "test")
+
+val flinkExclusionsForBefore1_14 = Seq(
+  excludeDependencies ++= List(
+    "org.apache.flink" % "flink-runtime",
+    "org.apache.flink" % "flink-queryable-state-runtime"
+  )
+)
+
+val flinkExclusionsForBefore1_15 = Seq(
+  excludeDependencies ++= List(
+    "org.apache.flink" % "flink-streaming-java",
+    "org.apache.flink" % "flink-statebackend-rocksdb",
+    "org.apache.flink" % "flink-connector-kafka",
+    "org.apache.flink" % "flink-test-utils"
+  )
+)
+
+def flinkDependenciesCommonForBefore1_15(version: String) = Seq(
+  "org.apache.flink" %% "flink-connector-kafka" % version,
+  "org.apache.flink" % "flink-core" % version,
+  "org.apache.flink" % "flink-java" % version,
+  "org.apache.flink" % "flink-runtime" % version,
+  "org.apache.flink" %% "flink-test-utils" % version
+)
+
+def flinkOverridesCommonForBefore1_15(version: String) =
+  flinkDependenciesCommonForBefore1_15(version)
 
 def managerDeps(version: String) = Seq(
   "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV,
@@ -131,31 +193,6 @@ def managerDeps(version: String) = Seq(
   "com.whisk" %% "docker-testkit-scalatest" % "0.9.0" % "it,test",
   "com.whisk" %% "docker-testkit-impl-spotify" % "0.9.0" % "it,test",
   "com.softwaremill.sttp.client" %% "async-http-client-backend-future" % sttpV,
-)
-
-val flinkExclusionsFor1_14 = Seq(
-  excludeDependencies ++= List(
-    "org.apache.flink" % "flink-streaming-java",
-    "org.apache.flink" % "flink-statebackend-rocksdb",
-    "org.apache.flink" % "flink-connector-kafka",
-    "org.apache.flink" % "flink-test-utils"
-  )
-)
-
-def depsCommonFlink1_14 = Seq(
-  "org.apache.flink" %% "flink-connector-kafka" % flink114V,
-  "org.apache.flink" % "flink-core" % flink114V,
-  "org.apache.flink" % "flink-java" % flink114V,
-  "org.apache.flink" % "flink-runtime" % flink114V,
-  "org.apache.flink" %% "flink-test-utils" % flink114V
-)
-
-def overridesCommonFlink1_14 = Seq(
-  "org.apache.flink" %% "flink-connector-kafka" % flink114V,
-  "org.apache.flink" % "flink-core" % flink114V,
-  "org.apache.flink" % "flink-java" % flink114V,
-  "org.apache.flink" % "flink-runtime" % flink114V,
-  "org.apache.flink" %% "flink-test-utils" % flink114V
 )
 
 def deps(version: String) = Seq(
