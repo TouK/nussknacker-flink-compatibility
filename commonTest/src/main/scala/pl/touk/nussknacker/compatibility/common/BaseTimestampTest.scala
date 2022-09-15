@@ -44,7 +44,6 @@ trait BaseTimestampTest extends AnyFunSuiteLike with BeforeAndAfterAll with Befo
     runWithAssigner(None)
 
     //5 seconds should be enough to run this test...-
-    Thread.sleep(10000)
     SinkForLongs.data.head.toDouble shouldBe (System.currentTimeMillis().toDouble +- 5000)
   }
 
@@ -54,7 +53,6 @@ trait BaseTimestampTest extends AnyFunSuiteLike with BeforeAndAfterAll with Befo
 
     runWithAssigner(Some(new LegacyTimestampWatermarkHandler[String](new FixedWatermarks(customFixedTime))))
 
-    Thread.sleep(10000)
     SinkForLongs.data shouldBe List(customFixedTime + CheckTimeTransformer.timeToAdd)
   }
 
