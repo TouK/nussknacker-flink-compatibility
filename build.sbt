@@ -169,11 +169,9 @@ val flinkExclusionsForBefore1_15 = Seq(
 )
 
 def flinkDependenciesCommonForBefore1_15(version: String) = Seq(
-  "org.apache.flink" %% "flink-connector-kafka" % version,
-  "org.apache.flink" % "flink-core" % version,
-  "org.apache.flink" % "flink-java" % version,
-  "org.apache.flink" % "flink-runtime" % version,
-  "org.apache.flink" %% "flink-test-utils" % version
+  "org.apache.flink" %% "flink-connector-kafka" % version % "provided",
+  "org.apache.flink" % "flink-runtime" % version % "provided",
+  "org.apache.flink" %% "flink-test-utils" % version % "provided"
 )
 
 def flinkOverridesCommonForBefore1_15(version: String) =
