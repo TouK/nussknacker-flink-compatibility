@@ -82,7 +82,7 @@ lazy val commonTest = (project in file("commonTest")).
       "pl.touk.nussknacker" %% "nussknacker-kafka-test-utils" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV,
-      "org.apache.flink" %% "flink-streaming-scala" % currentFlinkV,
+      "org.apache.flink" %% "flink-streaming-scala" % currentFlinkV % "provided",
     )
   )
 
@@ -119,9 +119,9 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager")).
 
 def managerDeps(version: String) = Seq(
   "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV,
-  "pl.touk.nussknacker" %% "nussknacker-http-utils" % nussknackerV % "it,test",
-  "pl.touk.nussknacker" %% "nussknacker-interpreter" % nussknackerV % "it,test",
-  "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV,
+  "pl.touk.nussknacker" %% "nussknacker-http-utils" % nussknackerV % "provided,it,test",
+  "pl.touk.nussknacker" %% "nussknacker-interpreter" % nussknackerV % "provided,it,test",
+  "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
 
   "pl.touk.nussknacker" %% "nussknacker-kafka-test-utils" % nussknackerV % "it,test",
   "org.apache.flink" %% "flink-streaming-scala" % version excludeAll(
@@ -159,8 +159,8 @@ def overridesCommonFlink1_14 = Seq(
 )
 
 def deps(version: String) = Seq(
-  "org.apache.flink" %% "flink-streaming-scala" % version,
-  "org.apache.flink" %% "flink-statebackend-rocksdb" % version,
+  "org.apache.flink" %% "flink-streaming-scala" % version % "provided",
+  "org.apache.flink" %% "flink-statebackend-rocksdb" % version % "provided",
   "pl.touk.nussknacker" %% "nussknacker-default-model" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-kafka-components" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-base-components" % nussknackerV,
@@ -176,10 +176,11 @@ def testUtilDeps(version: String) = Seq(
 )
 
 def flinkOverrides(version: String) = Seq(
-  "org.apache.flink" %% "flink-streaming-scala" % version,
-  "org.apache.flink" %% "flink-statebackend-rocksdb" % version,
+  "org.apache.flink" %% "flink-streaming-scala" % version % "provided",
+  "org.apache.flink" %% "flink-statebackend-rocksdb" % version % "provided",
   "org.apache.flink" % "flink-avro" % version,
-  "org.apache.flink" %% "flink-runtime" % version,
+  "org.apache.flink" %% "flink-runtime" % version % "provided",
+  "org.apache.flink" %% "flink-connector-kafka" % version % "provided",
   "org.apache.flink" %% "flink-test-utils" % version % "test",
   "org.apache.flink" % "flink-metrics-dropwizard" % version % "test",
 )
