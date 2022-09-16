@@ -133,7 +133,7 @@ lazy val flink114ModelCompat = (project in file("flink114/model")).
     dependencyOverrides ++= flinkOverrides(flink114V) ++ flinkOverridesCommonForBefore1_15(flink114V) ++ Seq(
       "org.apache.kafka" % "kafka-clients" % kafkaV
     ),
-  ).dependsOn(commonTest % "test")
+  ).dependsOn(commonTest % "test,it")
 
 lazy val flink114ManagerCompat = (project in file("flink114/manager")).
   settings(commonSettings(scala212V)).
@@ -153,7 +153,7 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager")).
     IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
       flink114ModelCompat / Compile / assembly
     ).value,
-  ).dependsOn(commonTest % "test")
+  ).dependsOn(commonTest % "test,it")
 
 val flinkExclusionsForBefore1_14 = Seq(
   excludeDependencies ++= List(
