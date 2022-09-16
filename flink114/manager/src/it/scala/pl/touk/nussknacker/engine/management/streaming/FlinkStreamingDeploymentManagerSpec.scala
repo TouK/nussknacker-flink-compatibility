@@ -5,6 +5,7 @@ import org.scalatest.matchers.should.Matchers
 import pl.touk.nussknacker.engine.api.ProcessVersion
 import pl.touk.nussknacker.engine.api.process.{ProcessId, ProcessName, VersionId}
 import pl.touk.nussknacker.engine.build.ScenarioBuilder
+import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
 import pl.touk.nussknacker.engine.graph.EspProcess
 import pl.touk.nussknacker.engine.spel.Implicits._
 import pl.touk.nussknacker.engine.util.config.ScalaMajorVersionConfig
@@ -26,7 +27,7 @@ class FlinkStreamingDeploymentManagerSpec extends AnyFunSuite with Matchers with
     cancelProcess(processId)
   }
 
-  def prepareProcess(id: String, parallelism: Option[Int] = None) : EspProcess = {
+  def prepareProcess(id: String, parallelism: Option[Int] = None): CanonicalProcess = {
     val baseProcessBuilder = ScenarioBuilder.streaming(id)
     parallelism.map(baseProcessBuilder.parallelism).getOrElse(baseProcessBuilder)
       .source("startProcess", "periodic",

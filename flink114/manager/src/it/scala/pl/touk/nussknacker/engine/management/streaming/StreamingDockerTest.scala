@@ -8,9 +8,8 @@ import org.scalatest.matchers.should.Matchers
 import pl.touk.nussknacker.engine.api.ProcessVersion
 import pl.touk.nussknacker.engine.api.deployment.{DeploymentManager, ProcessingTypeDeploymentService, ProcessingTypeDeploymentServiceStub}
 import pl.touk.nussknacker.engine.api.process.ProcessName
-import pl.touk.nussknacker.engine.canonize.ProcessCanonizer
+import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
 import pl.touk.nussknacker.engine.deployment.DeploymentData
-import pl.touk.nussknacker.engine.graph.EspProcess
 import pl.touk.nussknacker.engine.management.{DockerTest, Flink114StreamingDeploymentManagerProvider, FlinkStateStatus}
 import pl.touk.nussknacker.engine.{ModelData, ProcessingTypeConfig}
 import sttp.client.asynchttpclient.future.AsyncHttpClientFutureBackend
@@ -40,7 +39,7 @@ trait StreamingDockerTest extends DockerTest with Matchers {
     new Flink114StreamingDeploymentManagerProvider().createDeploymentManager(ModelData(typeConfig), typeConfig.deploymentConfig)
   }
 
-  protected def deployProcessAndWaitIfRunning(process: EspProcess, processVersion: ProcessVersion, savepointPath: Option[String] = None): Assertion = {
+  protected def deployProcessAndWaitIfRunning(process: CanonicalProcess, processVersion: ProcessVersion, savepointPath: Option[String] = None): Assertion = {
     deployProcess(process, processVersion, savepointPath)
 
     eventually {
@@ -52,8 +51,8 @@ trait StreamingDockerTest extends DockerTest with Matchers {
     }
   }
 
-  protected def deployProcess(process: EspProcess, processVersion: ProcessVersion, savepointPath: Option[String] = None): Assertion = {
-    assert(deploymentManager.deploy(processVersion, DeploymentData.empty, ProcessCanonizer.canonize(process), savepointPath).isReadyWithin(100 seconds))
+  protected def deployProcess(process: CanonicalProcess, processVersion: ProcessVersion, savepointPath: Option[String] = None): Assertion = {
+    assert(deploymentManager.deploy(processVersion, DeploymentData.empty, process, savepointPath).isReadyWithin(100 seconds))
   }
 
   protected def cancelProcess(processId: String): Unit = {
@@ -66,7 +65,7 @@ trait StreamingDockerTest extends DockerTest with Matchers {
 
       logger.debug(s"waiting for jobs: $processId, $runningJobs")
       if (runningJobs.nonEmpty) {
-        logger.info(s"RUNNING JOBS: ${runningJobs}")
+        logger.info(s"RUNNING JOBS: $runningJobs")
         throw new IllegalStateException("Job still exists")
       }
     }
