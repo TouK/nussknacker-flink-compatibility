@@ -80,7 +80,10 @@ lazy val commonTest = (project in file("commonTest")).
       "pl.touk.nussknacker" %% "nussknacker-default-model" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-kafka-test-utils" % nussknackerV,
-      "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV,
+      "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV excludeAll(
+        ExclusionRule("log4j", "log4j"),
+        ExclusionRule("org.slf4j", "slf4j-log4j12")
+      ),
       "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV,
       "org.apache.flink" %% "flink-streaming-scala" % currentFlinkV % "provided",
     )
@@ -130,7 +133,7 @@ lazy val flink114ModelCompat = (project in file("flink114/model")).
     dependencyOverrides ++= flinkOverrides(flink114V) ++ flinkOverridesCommonForBefore1_15(flink114V) ++ Seq(
       "org.apache.kafka" % "kafka-clients" % kafkaV
     ),
-  ).dependsOn(commonTest)
+  ).dependsOn(commonTest % "test")
 
 lazy val flink114ManagerCompat = (project in file("flink114/manager")).
   settings(commonSettings(scala212V)).
@@ -204,10 +207,6 @@ def deps(version: String) = Seq(
   "pl.touk.nussknacker" %% "nussknacker-kafka-test-utils" % nussknackerV % "test",
   "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV % "test",
   "org.apache.flink" %% "flink-streaming-scala" % version % "test",
-)
-
-def testUtilDeps(version: String) = Seq(
-  "pl.touk.nussknacker" %% "nussknacker-flink-test-util" % nussknackerV
 )
 
 def flinkOverrides(version: String) = Seq(
