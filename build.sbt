@@ -153,17 +153,35 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager")).
     ).value,
   ).dependsOn(commonTest % "test,it")
 
-val flinkExclusionsForBefore1_15 = Seq(
+def flinkExclusionsForBefore1_14 = Seq(
+  "org.apache.flink" % "flink-runtime",
+  "org.apache.flink" % "flink-queryable-state-runtime"
+) ++ flinkExclusionsForBefore1_15
+
+def flinkExclusionsForBefore1_15 = Seq(
   "org.apache.flink" % "flink-streaming-java",
   "org.apache.flink" % "flink-statebackend-rocksdb",
   "org.apache.flink" % "flink-connector-kafka",
   "org.apache.flink" % "flink-test-utils"
 )
 
-val flinkExclusionsForBefore1_14 = Seq(
-  "org.apache.flink" % "flink-runtime",
-  "org.apache.flink" % "flink-queryable-state-runtime"
-) ++ flinkExclusionsForBefore1_15
+def flinkDependenciesCommonForBefore1_14(version: String) = Seq(
+  "org.apache.flink" % "flink-runtime" % version,
+  "org.apache.flink" % "flink-queryable-state-runtime" % version
+) ++ flinkDependenciesCommonForBefore1_15(version: String)
+
+def flinkOverridesCommonForBefore1_14(version: String) =
+  flinkDependenciesCommonForBefore1_14(version)
+
+def flinkDependenciesCommonForBefore1_15(version: String) = Seq(
+  "org.apache.flink" %% "flink-connector-kafka" % version % "provided",
+  "org.apache.flink" % "flink-runtime" % version % "provided",
+  "org.apache.flink" %% "flink-test-utils" % version % "provided",
+  "org.apache.flink" % "flink-statebackend-rocksdb" % version % "provided"
+)
+
+def flinkOverridesCommonForBefore1_15(version: String) =
+  flinkDependenciesCommonForBefore1_15(version)
 
 def flinkSettingsCommonForBefore1_14(version: String) = Seq(
   excludeDependencies ++= flinkExclusionsForBefore1_14,
@@ -176,22 +194,6 @@ def flinkSettingsCommonForBefore1_15(version: String) = Seq(
   libraryDependencies ++= flinkDependenciesCommonForBefore1_15(version),
   dependencyOverrides ++= flinkOverrides(version) ++ flinkOverridesCommonForBefore1_15(version)
 )
-
-def flinkDependenciesCommonForBefore1_14(version: String) = Seq(
-
-) ++ flinkDependenciesCommonForBefore1_15(version: String)
-
-def flinkOverridesCommonForBefore1_14(version: String) =
-  flinkDependenciesCommonForBefore1_14(version)
-
-def flinkDependenciesCommonForBefore1_15(version: String) = Seq(
-  "org.apache.flink" %% "flink-connector-kafka" % version % "provided",
-  "org.apache.flink" % "flink-runtime" % version % "provided",
-  "org.apache.flink" %% "flink-test-utils" % version % "provided"
-)
-
-def flinkOverridesCommonForBefore1_15(version: String) =
-  flinkDependenciesCommonForBefore1_15(version)
 
 def managerDeps(version: String) = Seq(
   "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV,
