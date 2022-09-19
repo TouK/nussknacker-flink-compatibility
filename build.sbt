@@ -168,13 +168,13 @@ val flinkExclusionsForBefore1_14 = Seq(
 def flinkSettingsCommonForBefore1_14(version: String) = Seq(
   excludeDependencies ++= flinkExclusionsForBefore1_14,
   libraryDependencies ++= flinkDependenciesCommonForBefore1_14(version),
-  dependencyOverrides ++= flinkOverrides(flink114V) ++ flinkOverridesCommonForBefore1_14(version)
+  dependencyOverrides ++= flinkOverrides(version) ++ flinkOverridesCommonForBefore1_14(version)
 )
 
 def flinkSettingsCommonForBefore1_15(version: String) = Seq(
   excludeDependencies ++= flinkExclusionsForBefore1_15,
   libraryDependencies ++= flinkDependenciesCommonForBefore1_15(version),
-  dependencyOverrides ++= flinkOverrides(flink114V) ++ flinkOverridesCommonForBefore1_15(version)
+  dependencyOverrides ++= flinkOverrides(version) ++ flinkOverridesCommonForBefore1_15(version)
 )
 
 def flinkDependenciesCommonForBefore1_14(version: String) = Seq(
