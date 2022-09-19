@@ -91,12 +91,11 @@ lazy val commonTest = (project in file("commonTest")).
 
 lazy val flink111ModelCompat = (project in file("flink111/model")).
   settings(commonSettings(scala212V)).
-  settings(flinkExclusionsForBefore1_14).
-  settings(flinkExclusionsForBefore1_15).
+  settings(flinkSettingsCommonForBefore1_14(flink111V)).
   settings(
     name := "flink111-model",
-    libraryDependencies ++= deps(flink111V) ++ flinkDependenciesCommonForBefore1_15(flink111V),
-    dependencyOverrides ++= flinkOverrides(flink111V) ++ flinkOverridesCommonForBefore1_15(flink111V) ++ Seq(
+    libraryDependencies ++= deps(flink111V),
+    dependencyOverrides ++= Seq(
       //???
       "org.apache.kafka" % "kafka-clients" % kafkaV,
     )
@@ -106,12 +105,11 @@ lazy val flink111ManagerCompat = (project in file("flink111/manager")).
   settings(commonSettings(scala212V)).
   configs(IntegrationTest).
   settings(Defaults.itSettings).
-  settings(flinkExclusionsForBefore1_14).
-  settings(flinkExclusionsForBefore1_15).
+  settings(flinkSettingsCommonForBefore1_14(flink111V)).
   settings(
     name := "flink111-manager",
-    libraryDependencies ++= managerDeps(flink111V) ++ flinkDependenciesCommonForBefore1_15(flink111V),
-    dependencyOverrides ++= flinkOverrides(flink111V) ++ flinkOverridesCommonForBefore1_15(flink111V) ++ Seq(
+    libraryDependencies ++= managerDeps(flink111V),
+    dependencyOverrides ++= Seq(
       //For some strange reason, docker client libraries have conflict with schema registry client :/
       "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
       "org.apache.kafka" % "kafka-clients" % kafkaV,
@@ -124,52 +122,67 @@ lazy val flink111ManagerCompat = (project in file("flink111/manager")).
   ).dependsOn(commonTest % "test")
 
 
-//lazy val flink114ModelCompat = (project in file("flink114/model")).
-//  settings(commonSettings(scala212V)).
-//  settings(flinkExclusionsForBefore1_15).
-//  settings(
-//    name := "flink114-model",
-//    libraryDependencies ++= deps(flink114V) ++ flinkDependenciesCommonForBefore1_15(flink114V),
-//    dependencyOverrides ++= flinkOverrides(flink114V) ++ flinkOverridesCommonForBefore1_15(flink114V) ++ Seq(
-//      "org.apache.kafka" % "kafka-clients" % kafkaV
-//    ),
-//  ).dependsOn(commonTest % "test,it")
-//
-//lazy val flink114ManagerCompat = (project in file("flink114/manager")).
-//  settings(commonSettings(scala212V)).
-//  configs(IntegrationTest).
-//  settings(Defaults.itSettings).
-//  settings(flinkExclusionsForBefore1_15).
-//  settings(
-//    name := "flink114-manager",
-//    libraryDependencies ++= managerDeps(flink114V) ++ flinkDependenciesCommonForBefore1_15(flink114V),
-//    dependencyOverrides ++= flinkOverrides(flink114V) ++ flinkOverridesCommonForBefore1_15(flink114V) ++ Seq(
-//      //For some strange reason, docker client libraries have conflict with schema registry client :/
-//      "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
-//      "org.apache.kafka" % "kafka-clients" % kafkaV,
-//      // must be the same as used by flink - otherwise it is evicted by version from deployment-manager-api
-//      "com.typesafe.akka" %% "akka-actor" % "2.5.21",
-//    ),
-//    IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
-//      flink114ModelCompat / Compile / assembly
-//    ).value,
-//  ).dependsOn(commonTest % "test,it")
+lazy val flink114ModelCompat = (project in file("flink114/model")).
+  settings(commonSettings(scala212V)).
+  settings(flinkSettingsCommonForBefore1_15(flink114V)).
+  settings(
+    name := "flink114-model",
+    libraryDependencies ++= deps(flink114V),
+    dependencyOverrides ++= Seq(
+      "org.apache.kafka" % "kafka-clients" % kafkaV
+    ),
+  ).dependsOn(commonTest % "test,it")
 
-val flinkExclusionsForBefore1_14 = Seq(
-  excludeDependencies ++= List(
-    "org.apache.flink" % "flink-runtime",
-    "org.apache.flink" % "flink-queryable-state-runtime"
-  )
-)
+lazy val flink114ManagerCompat = (project in file("flink114/manager")).
+  settings(commonSettings(scala212V)).
+  configs(IntegrationTest).
+  settings(Defaults.itSettings).
+  settings(flinkSettingsCommonForBefore1_15(flink114V)).
+  settings(
+    name := "flink114-manager",
+    libraryDependencies ++= managerDeps(flink114V),
+    dependencyOverrides ++= Seq(
+      //For some strange reason, docker client libraries have conflict with schema registry client :/
+      "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
+      "org.apache.kafka" % "kafka-clients" % kafkaV,
+      // must be the same as used by flink - otherwise it is evicted by version from deployment-manager-api
+      "com.typesafe.akka" %% "akka-actor" % "2.5.21",
+    ),
+    IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
+      flink114ModelCompat / Compile / assembly
+    ).value,
+  ).dependsOn(commonTest % "test,it")
 
 val flinkExclusionsForBefore1_15 = Seq(
-  excludeDependencies ++= List(
-    "org.apache.flink" % "flink-streaming-java",
-    "org.apache.flink" % "flink-statebackend-rocksdb",
-    "org.apache.flink" % "flink-connector-kafka",
-    "org.apache.flink" % "flink-test-utils"
-  )
+  "org.apache.flink" % "flink-streaming-java",
+  "org.apache.flink" % "flink-statebackend-rocksdb",
+  "org.apache.flink" % "flink-connector-kafka",
+  "org.apache.flink" % "flink-test-utils"
 )
+
+val flinkExclusionsForBefore1_14 = Seq(
+  "org.apache.flink" % "flink-runtime",
+  "org.apache.flink" % "flink-queryable-state-runtime"
+) ++ flinkExclusionsForBefore1_15
+
+def flinkSettingsCommonForBefore1_14(version: String) = Seq(
+  excludeDependencies ++= flinkExclusionsForBefore1_14,
+  libraryDependencies ++= flinkDependenciesCommonForBefore1_14(version),
+  dependencyOverrides ++= flinkOverrides(flink114V) ++ flinkOverridesCommonForBefore1_14(version)
+)
+
+def flinkSettingsCommonForBefore1_15(version: String) = Seq(
+  excludeDependencies ++= flinkExclusionsForBefore1_15,
+  libraryDependencies ++= flinkDependenciesCommonForBefore1_15(version),
+  dependencyOverrides ++= flinkOverrides(flink114V) ++ flinkOverridesCommonForBefore1_15(version)
+)
+
+def flinkDependenciesCommonForBefore1_14(version: String) = Seq(
+
+) ++ flinkDependenciesCommonForBefore1_15(version: String)
+
+def flinkOverridesCommonForBefore1_14(version: String) =
+  flinkDependenciesCommonForBefore1_14(version)
 
 def flinkDependenciesCommonForBefore1_15(version: String) = Seq(
   "org.apache.flink" %% "flink-connector-kafka" % version % "provided",
