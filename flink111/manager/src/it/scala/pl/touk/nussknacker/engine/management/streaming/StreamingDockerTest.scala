@@ -10,7 +10,7 @@ import pl.touk.nussknacker.engine.api.deployment.{DeploymentManager, ProcessingT
 import pl.touk.nussknacker.engine.api.process.ProcessName
 import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
 import pl.touk.nussknacker.engine.deployment.DeploymentData
-import pl.touk.nussknacker.engine.management.{DockerTest, Flink111StreamingDeploymentManagerProvider, FlinkStateStatus}
+import pl.touk.nussknacker.engine.management.{DockerTest, CustomFlinkStreamingDeploymentManagerProvider, FlinkStateStatus}
 import pl.touk.nussknacker.engine.{ModelData, ProcessingTypeConfig}
 import sttp.client.asynchttpclient.future.AsyncHttpClientFutureBackend
 import sttp.client.{NothingT, SttpBackend}
@@ -36,7 +36,7 @@ trait StreamingDockerTest extends DockerTest with Matchers {
 
   protected lazy val deploymentManager: DeploymentManager = {
     val typeConfig = ProcessingTypeConfig.read(config)
-    new Flink111StreamingDeploymentManagerProvider().createDeploymentManager(ModelData(typeConfig), typeConfig.deploymentConfig)
+    new CustomFlinkStreamingDeploymentManagerProvider().createDeploymentManager(ModelData(typeConfig), typeConfig.deploymentConfig)
   }
 
   protected def deployProcessAndWaitIfRunning(process: CanonicalProcess, processVersion: ProcessVersion, savepointPath: Option[String] = None): Assertion = {

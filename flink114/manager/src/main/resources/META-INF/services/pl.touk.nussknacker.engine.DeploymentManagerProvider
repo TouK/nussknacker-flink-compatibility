@@ -1,1 +1,1 @@
-pl.touk.nussknacker.engine.management.Flink114StreamingDeploymentManagerProvider
+pl.touk.nussknacker.engine.management.CustomFlinkStreamingDeploymentManagerProvider

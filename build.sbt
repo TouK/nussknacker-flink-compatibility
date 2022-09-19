@@ -86,6 +86,9 @@ lazy val commonTest = (project in file("commonTest")).
       ),
       "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV,
       "org.apache.flink" %% "flink-streaming-scala" % currentFlinkV % "provided",
+
+      "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV,
+      "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
     )
   )
 
@@ -119,7 +122,7 @@ lazy val flink111ManagerCompat = (project in file("flink111/manager")).
     IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
       flink111ModelCompat / Compile / assembly
     ).value,
-  ).dependsOn(commonTest % "test")
+  ).dependsOn(commonTest)
 
 
 lazy val flink114ModelCompat = (project in file("flink114/model")).
@@ -151,7 +154,7 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager")).
     IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
       flink114ModelCompat / Compile / assembly
     ).value,
-  ).dependsOn(commonTest % "test,it")
+  ).dependsOn(commonTest)
 
 def flinkExclusionsForBefore1_14 = Seq(
   "org.apache.flink" % "flink-runtime",

@@ -4,11 +4,12 @@ import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import pl.touk.nussknacker.engine.{BaseModelData, ModelData}
 import pl.touk.nussknacker.engine.api.deployment.{DeploymentManager, ProcessingTypeDeploymentService}
+import pl.touk.nussknacker.engine.management.common.CommonFlinkStreamingRestManager
 import sttp.client.{NothingT, SttpBackend}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class Flink111StreamingDeploymentManagerProvider extends FlinkStreamingDeploymentManagerProvider {
+class CustomFlinkStreamingDeploymentManagerProvider extends FlinkStreamingDeploymentManagerProvider {
 
   import net.ceedubs.ficus.readers.ArbitraryTypeReader._
   import net.ceedubs.ficus.Ficus._
@@ -18,7 +19,7 @@ class Flink111StreamingDeploymentManagerProvider extends FlinkStreamingDeploymen
                                       (implicit ec: ExecutionContext, actorSystem: ActorSystem,
                                        sttpBackend: SttpBackend[Future, Nothing, NothingT], deploymentService: ProcessingTypeDeploymentService): DeploymentManager = {
     val flinkConfig = config.rootAs[FlinkConfig]
-    new Flink111StreamingRestManager(flinkConfig, modelData)
+    new CommonFlinkStreamingRestManager(flinkConfig, modelData)
   }
 
   override def name: String = "flink111Streaming"
