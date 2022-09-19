@@ -86,6 +86,8 @@ lazy val commonTest = (project in file("commonTest")).
       ),
       "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV,
       "org.apache.flink" %% "flink-streaming-scala" % currentFlinkV % "provided",
+      "com.whisk" %% "docker-testkit-scalatest" % "0.9.0",
+      "com.whisk" %% "docker-testkit-impl-spotify" % "0.9.0",
 
       "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
