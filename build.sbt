@@ -96,37 +96,37 @@ lazy val commonTest = (project in file("commonTest")).
     )
   )
 
-//lazy val flink111ModelCompat = (project in file("flink111/model")).
-//  settings(commonSettings(scala212V)).
-//  settings(flinkSettingsCommonForBefore1_14(flink111V)).
-//  settings(
-//    name := "flink111-model",
-//    libraryDependencies ++= deps(flink111V),
-//    dependencyOverrides ++= Seq(
-//      //???
-//      "org.apache.kafka" % "kafka-clients" % kafkaV,
-//    )
-//  ).dependsOn(commonTest % "test")
-//
-//lazy val flink111ManagerCompat = (project in file("flink111/manager")).
-//  settings(commonSettings(scala212V)).
-//  configs(IntegrationTest).
-//  settings(Defaults.itSettings).
-//  settings(flinkSettingsCommonForBefore1_14(flink111V)).
-//  settings(
-//    name := "flink111-manager",
-//    libraryDependencies ++= managerDeps(flink111V),
-//    dependencyOverrides ++= Seq(
-//      //For some strange reason, docker client libraries have conflict with schema registry client :/
-//      "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
-//      "org.apache.kafka" % "kafka-clients" % kafkaV,
-//      // must be the same as used by flink - otherwise it is evicted by version from deployment-manager-api
-//      "com.typesafe.akka" %% "akka-actor" % "2.5.21"
-//    ),
-//    IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
-//      flink111ModelCompat / Compile / assembly
-//    ).value,
-//  ).dependsOn(commonTest)
+lazy val flink111ModelCompat = (project in file("flink111/model")).
+  settings(commonSettings(scala212V)).
+  settings(flinkSettingsCommonForBefore1_14(flink111V)).
+  settings(
+    name := "flink111-model",
+    libraryDependencies ++= deps(flink111V),
+    dependencyOverrides ++= Seq(
+      //???
+      "org.apache.kafka" % "kafka-clients" % kafkaV,
+    )
+  ).dependsOn(commonTest % "test")
+
+lazy val flink111ManagerCompat = (project in file("flink111/manager")).
+  settings(commonSettings(scala212V)).
+  configs(IntegrationTest).
+  settings(Defaults.itSettings).
+  settings(flinkSettingsCommonForBefore1_14(flink111V)).
+  settings(
+    name := "flink111-manager",
+    libraryDependencies ++= managerDeps(flink111V),
+    dependencyOverrides ++= Seq(
+      //For some strange reason, docker client libraries have conflict with schema registry client :/
+      "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
+      "org.apache.kafka" % "kafka-clients" % kafkaV,
+      // must be the same as used by flink - otherwise it is evicted by version from deployment-manager-api
+      "com.typesafe.akka" %% "akka-actor" % "2.5.21"
+    ),
+    IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
+      flink111ModelCompat / Compile / assembly
+    ).value,
+  ).dependsOn(commonTest)
 
 
 lazy val flink114ModelCompat = (project in file("flink114/model")).
