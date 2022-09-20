@@ -1,12 +1,11 @@
-package pl.touk.nussknacker.compatibility.flink114
+package pl.touk.nussknacker.compatibility
 
 import org.apache.flink.configuration.{Configuration, CoreOptions}
-import org.apache.flink.test.util.MiniClusterWithClientResource
 import org.scalatest.{BeforeAndAfterAll, Suite}
-import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder.{AdditionalEnvironmentConfig, prepareMiniClusterResource}
-import pl.touk.nussknacker.engine.flink.test.{FlinkMiniClusterHolder, FlinkMiniClusterHolderImpl, FlinkTestConfiguration, MiniClusterExecutionEnvironment}
+import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder.AdditionalEnvironmentConfig
+import pl.touk.nussknacker.engine.flink.test.{FlinkMiniClusterHolder, FlinkTestConfiguration}
 
-trait Flink114Spec extends BeforeAndAfterAll {
+trait FlinkSpec extends BeforeAndAfterAll {
   self: Suite =>
 
   var flinkMiniCluster: FlinkMiniClusterHolder = _

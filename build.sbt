@@ -91,6 +91,7 @@ lazy val commonTest = (project in file("commonTest")).
 
       "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
+      "pl.touk.nussknacker" %% "nussknacker-flink-kafka-components" % nussknackerV,
       "com.softwaremill.sttp.client" %% "async-http-client-backend-future" % sttpV,
     )
   )
