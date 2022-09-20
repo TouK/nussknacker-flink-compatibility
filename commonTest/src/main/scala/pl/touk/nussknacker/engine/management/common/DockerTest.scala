@@ -25,7 +25,7 @@ import scala.concurrent.duration._
 trait DockerTest extends DockerTestKit with ScalaFutures with Eventually with LazyLogging {
   self: Suite =>
 
-  protected val flinkEsp: String
+  protected def flinkEsp: String
 
   override val StartContainersTimeout: FiniteDuration = 5.minutes
   override val StopContainersTimeout: FiniteDuration = 2.minutes

@@ -20,6 +20,6 @@ class FlinkStreamingDeploymentManagerSpec extends CommonFlinkStreamingDeployment
   override protected def deploymentManagerProvider: CommonFlinkStreamingDeploymentManagerProvider =
     new CustomFlinkStreamingDeploymentManagerProvider()
 
-  override protected val flinkEsp =
+  override protected def flinkEsp =
     s"flinkesp:1.14.5-scala_${ScalaMajorVersionConfig.scalaMajorVersion}"
 }
