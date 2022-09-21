@@ -9,7 +9,7 @@ import sttp.client.{NothingT, SttpBackend}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait CommonFlinkStreamingDeploymentManagerProvider extends FlinkStreamingDeploymentManagerProvider {
+class CommonFlinkStreamingDeploymentManagerProvider extends FlinkStreamingDeploymentManagerProvider {
 
   import net.ceedubs.ficus.readers.ArbitraryTypeReader._
   import net.ceedubs.ficus.Ficus._
@@ -17,10 +17,9 @@ trait CommonFlinkStreamingDeploymentManagerProvider extends FlinkStreamingDeploy
 
   override def createDeploymentManager(modelData: BaseModelData, config: Config)
                                       (implicit ec: ExecutionContext, actorSystem: ActorSystem,
-                                       sttpBackend: SttpBackend[Future, Nothing, NothingT], deploymentService: ProcessingTypeDeploymentService): DeploymentManager = {
+                                       sttpBackend: SttpBackend[Future, Nothing, NothingT],
+                                       deploymentService: ProcessingTypeDeploymentService): DeploymentManager = {
     val flinkConfig = config.rootAs[FlinkConfig]
     new CommonFlinkStreamingRestManager(flinkConfig, modelData)
   }
-
-  def name: String
 }
