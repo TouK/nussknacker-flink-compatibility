@@ -1,15 +1,14 @@
-package pl.touk.nussknacker.engine.management.common
+package pl.touk.nussknacker.engine.management
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import pl.touk.nussknacker.engine.BaseModelData
 import pl.touk.nussknacker.engine.api.deployment.{DeploymentManager, ProcessingTypeDeploymentService}
-import pl.touk.nussknacker.engine.management.{FlinkConfig, FlinkStreamingDeploymentManagerProvider}
 import sttp.client.{NothingT, SttpBackend}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class CommonFlinkStreamingDeploymentManagerProvider extends FlinkStreamingDeploymentManagerProvider {
+class CustomFlinkStreamingDeploymentManagerProvider extends FlinkStreamingDeploymentManagerProvider {
 
   import net.ceedubs.ficus.readers.ArbitraryTypeReader._
   import net.ceedubs.ficus.Ficus._
@@ -20,6 +19,6 @@ class CommonFlinkStreamingDeploymentManagerProvider extends FlinkStreamingDeploy
                                        sttpBackend: SttpBackend[Future, Nothing, NothingT],
                                        deploymentService: ProcessingTypeDeploymentService): DeploymentManager = {
     val flinkConfig = config.rootAs[FlinkConfig]
-    new CommonFlinkStreamingRestManager(flinkConfig, modelData)
+    new CustomFlinkStreamingRestManager(flinkConfig, modelData)
   }
 }

@@ -10,7 +10,7 @@ import pl.touk.nussknacker.engine.api.deployment.{DeploymentManager, ProcessingT
 import pl.touk.nussknacker.engine.api.process.ProcessName
 import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
 import pl.touk.nussknacker.engine.deployment.DeploymentData
-import pl.touk.nussknacker.engine.management.FlinkStateStatus
+import pl.touk.nussknacker.engine.management.{FlinkStateStatus, FlinkStreamingDeploymentManagerProvider}
 import pl.touk.nussknacker.engine.{ModelData, ProcessingTypeConfig}
 import sttp.client.asynchttpclient.future.AsyncHttpClientFutureBackend
 import sttp.client.{NothingT, SttpBackend}
@@ -21,7 +21,7 @@ import scala.concurrent.duration._
 trait StreamingDockerTest extends DockerTest with Matchers {
   self: Suite =>
 
-  protected def deploymentManagerProvider: CommonFlinkStreamingDeploymentManagerProvider
+  protected def deploymentManagerProvider: FlinkStreamingDeploymentManagerProvider
 
   lazy val taskManagerContainer: DockerContainer = buildTaskManagerContainer()
   private implicit val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
