@@ -25,6 +25,7 @@ import scala.concurrent.duration._
 trait DockerTest extends DockerTestKit with ScalaFutures with Eventually with LazyLogging {
   self: Suite =>
 
+  protected def dockerNameSuffix: String
   protected def flinkEsp: String
 
   override val StartContainersTimeout: FiniteDuration = 5.minutes
@@ -59,13 +60,13 @@ trait DockerTest extends DockerTestKit with ScalaFutures with Eventually with La
   val taskManagerSlotCount = 8
 
   lazy val zookeeperContainer: DockerContainer =
-    DockerContainer("wurstmeister/zookeeper:3.4.6", name = Some("zookeeper"))
+    DockerContainer("wurstmeister/zookeeper:3.4.6", name = Some("zookeeper" ++ dockerNameSuffix))
 
   def baseFlink(name: String): DockerContainer = DockerContainer(flinkEsp, Some(name))
 
   lazy val jobManagerContainer: DockerContainer = {
     val savepointDir = prepareVolumeDir()
-    baseFlink("jobmanager")
+    baseFlink("jobmanager" ++ dockerNameSuffix)
       .withCommand("jobmanager")
       .withEnv(s"SAVEPOINT_DIR_NAME=${savepointDir.getFileName}")
       .withReadyChecker(DockerReadyChecker.LogLineContains("Recover all persisted job graphs").looped(5, 1 second))
@@ -82,7 +83,7 @@ trait DockerTest extends DockerTestKit with ScalaFutures with Eventually with La
       ContainerLink(zookeeperContainer, "zookeeper"),
       ContainerLink(jobManagerContainer, "jobmanager")
     ) ++ additionalLinks
-    baseFlink("taskmanager")
+    baseFlink("taskmanager" ++ dockerNameSuffix)
       .withCommand("taskmanager")
       .withEnv(s"TASK_MANAGER_NUMBER_OF_TASK_SLOTS=$taskManagerSlotCount")
       .withReadyChecker(DockerReadyChecker.LogLineContains("Successful registration at resource manager").looped(5, 1 second))

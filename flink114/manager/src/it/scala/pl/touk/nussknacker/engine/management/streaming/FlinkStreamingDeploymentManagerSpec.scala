@@ -5,6 +5,7 @@ import pl.touk.nussknacker.engine.management.common.{CommonFlinkStreamingDeploym
 import pl.touk.nussknacker.engine.util.config.ScalaMajorVersionConfig
 
 class FlinkStreamingDeploymentManagerSpec extends CommonFlinkStreamingDeploymentManagerSpec {
+  override protected def dockerNameSuffix: String = "114"
 
   override protected def classPath: String =
     s"./flink114/model/target/scala-${ScalaMajorVersionConfig.scalaMajorVersion}/flink114-model-assembly.jar"
