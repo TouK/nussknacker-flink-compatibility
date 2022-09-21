@@ -10,6 +10,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class CustomFlinkStreamingDeploymentManagerProvider extends FlinkStreamingDeploymentManagerProvider {
 
+  import net.ceedubs.ficus.Ficus._
   import net.ceedubs.ficus.readers.ArbitraryTypeReader._
   import pl.touk.nussknacker.engine.util.config.ConfigEnrichments._
 
