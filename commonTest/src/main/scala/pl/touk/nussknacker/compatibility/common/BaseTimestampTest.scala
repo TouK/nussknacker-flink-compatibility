@@ -4,6 +4,7 @@ import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory.fromAnyRef
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.flink.api.common.JobExecutionResult
 import org.apache.flink.streaming.api.functions.{AssignerWithPunctuatedWatermarks, KeyedProcessFunction}
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment, createTypeInformation}
 import org.apache.flink.streaming.api.watermark.Watermark
@@ -39,23 +40,16 @@ trait BaseTimestampTest extends AnyFunSuiteLike with BeforeAndAfterAll with Befo
     SinkForLongs.clear()
   }
 
-  test("should handle ingestion time") {
-    //we check if ingestion time is used (processingTime would not fire eventTime timer)
-    runWithAssigner(None)
-
-    //5 seconds should be enough to run this test...
-    SinkForLongs.data.head.toDouble shouldBe (System.currentTimeMillis().toDouble +- 5000)
-  }
-
   test("should handle event time") {
 
     val customFixedTime = System.currentTimeMillis() + 1000000
 
     runWithAssigner(Some(new LegacyTimestampWatermarkHandler[String](new FixedWatermarks(customFixedTime))))
+
     SinkForLongs.data shouldBe List(customFixedTime + CheckTimeTransformer.timeToAdd)
   }
 
-  private def runWithAssigner(assigner: Option[TimestampWatermarkHandler[String]]) = {
+  protected def runWithAssigner(assigner: Option[TimestampWatermarkHandler[String]]): JobExecutionResult = {
     import spel.Implicits._
     val process = ScenarioBuilder.streaming("timestamps")
       .parallelism(1)

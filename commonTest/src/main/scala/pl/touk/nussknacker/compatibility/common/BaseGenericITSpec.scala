@@ -9,6 +9,7 @@ import io.confluent.kafka.serializers.{KafkaAvroDeserializer, KafkaAvroSerialize
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.flink.api.common.ExecutionConfig
+import org.apache.kafka.clients.producer.RecordMetadata
 import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
 import org.scalatest.funsuite.AnyFunSuiteLike
 import org.scalatest.matchers.should.Matchers
@@ -23,9 +24,9 @@ import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.confluent.Confluen
 import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.confluent.client.{MockConfluentSchemaRegistryClientFactory, MockSchemaRegistryClient}
 import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.{ExistingSchemaVersion, LatestSchemaVersion, SchemaVersionOption}
 import pl.touk.nussknacker.engine.build.ScenarioBuilder
+import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
 import pl.touk.nussknacker.engine.deployment.DeploymentData
 import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder
-import pl.touk.nussknacker.engine.graph.EspProcess
 import pl.touk.nussknacker.engine.kafka.{KafkaConfig, KafkaSpec, KafkaTestUtils}
 import pl.touk.nussknacker.engine.process.ExecutionConfigPreparer
 import pl.touk.nussknacker.engine.process.ExecutionConfigPreparer.{ProcessSettingsPreparer, UnoptimizedSerializationPreparer}
@@ -38,6 +39,7 @@ import pl.touk.nussknacker.engine.util.namespaces.ObjectNamingProvider
 import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import scala.concurrent.Future
 
 /*
   This trait should be based on GenericITSpec:
@@ -353,13 +355,13 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
     )
   }
 
-  private def run(process: EspProcess)(action: => Unit): Unit = {
+  private def run(process: CanonicalProcess)(action: => Unit): Unit = {
     val env = flinkMiniCluster.createExecutionEnvironment()
     registrar.register(new StreamExecutionEnvironment(env), process, ProcessVersion.empty, DeploymentData.empty)
     env.withJobRunning(process.id)(action)
   }
 
-  protected def sendAvro(obj: Any, topic: String, timestamp: java.lang.Long = null) = {
+  protected def sendAvro(obj: Any, topic: String, timestamp: java.lang.Long = null): Future[RecordMetadata] = {
     val serializedObj = valueSerializer.serialize(topic, obj)
     kafkaClient.sendRawMessage(topic, Array.empty, serializedObj, timestamp = timestamp)
   }
@@ -432,7 +434,7 @@ object MockSchemaRegistry extends Serializable {
 
   val RecordSchemaV2: Schema = AvroUtils.parseSchema(RecordSchemaStringV2)
 
-  val RecordSchemas = List(RecordSchemaV1, RecordSchemaV2)
+  val RecordSchemas: List[Schema] = List(RecordSchemaV1, RecordSchemaV2)
 
   val SecondRecordSchemaStringV1: String =
     """{

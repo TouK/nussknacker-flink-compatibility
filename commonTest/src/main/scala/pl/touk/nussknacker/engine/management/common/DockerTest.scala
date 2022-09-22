@@ -1,12 +1,12 @@
-package pl.touk.nussknacker.engine.management
+package pl.touk.nussknacker.engine.management.common
 
 import com.spotify.docker.client.{DefaultDockerClient, DockerClient}
 import com.typesafe.config.ConfigValueFactory.fromAnyRef
 import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import com.typesafe.scalalogging.LazyLogging
+import com.whisk.docker.{ContainerLink, DockerContainer, DockerFactory, DockerReadyChecker, LogLineReceiver, VolumeMapping}
 import com.whisk.docker.impl.spotify.SpotifyDockerFactory
 import com.whisk.docker.scalatest.DockerTestKit
-import com.whisk.docker.{ContainerLink, DockerContainer, DockerFactory, DockerReadyChecker, LogLineReceiver, VolumeMapping}
 import org.apache.commons.io.{FileUtils, IOUtils}
 import org.scalatest.Suite
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
@@ -25,12 +25,13 @@ import scala.concurrent.duration._
 trait DockerTest extends DockerTestKit with ScalaFutures with Eventually with LazyLogging {
   self: Suite =>
 
+  protected def dockerNameSuffix: String
+  protected def flinkEsp: String
+
   override val StartContainersTimeout: FiniteDuration = 5.minutes
   override val StopContainersTimeout: FiniteDuration = 2.minutes
 
   final override implicit def patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(2, Minutes)), interval = scaled(Span(100, Millis)))
-
-  private val flinkEsp = s"flinkesp:1.11.2-scala_${ScalaMajorVersionConfig.scalaMajorVersion}"
 
   private val client: DockerClient = DefaultDockerClient.fromEnv().build()
 
@@ -58,14 +59,14 @@ trait DockerTest extends DockerTestKit with ScalaFutures with Eventually with La
   val FlinkJobManagerRestPort = 8081
   val taskManagerSlotCount = 8
 
-  lazy val zookeeperContainer =
-    DockerContainer("wurstmeister/zookeeper:3.4.6", name = Some("zookeeper"))
+  lazy val zookeeperContainer: DockerContainer =
+    DockerContainer("wurstmeister/zookeeper:3.4.6", name = Some("zookeeper" ++ dockerNameSuffix))
 
-  def baseFlink(name: String) = DockerContainer(flinkEsp, Some(name))
+  def baseFlink(name: String): DockerContainer = DockerContainer(flinkEsp, Some(name))
 
   lazy val jobManagerContainer: DockerContainer = {
     val savepointDir = prepareVolumeDir()
-    baseFlink("jobmanager")
+    baseFlink("jobmanager" ++ dockerNameSuffix)
       .withCommand("jobmanager")
       .withEnv(s"SAVEPOINT_DIR_NAME=${savepointDir.getFileName}")
       .withReadyChecker(DockerReadyChecker.LogLineContains("Recover all persisted job graphs").looped(5, 1 second))
@@ -82,7 +83,7 @@ trait DockerTest extends DockerTestKit with ScalaFutures with Eventually with La
       ContainerLink(zookeeperContainer, "zookeeper"),
       ContainerLink(jobManagerContainer, "jobmanager")
     ) ++ additionalLinks
-    baseFlink("taskmanager")
+    baseFlink("taskmanager" ++ dockerNameSuffix)
       .withCommand("taskmanager")
       .withEnv(s"TASK_MANAGER_NUMBER_OF_TASK_SLOTS=$taskManagerSlotCount")
       .withReadyChecker(DockerReadyChecker.LogLineContains("Successful registration at resource manager").looped(5, 1 second))
