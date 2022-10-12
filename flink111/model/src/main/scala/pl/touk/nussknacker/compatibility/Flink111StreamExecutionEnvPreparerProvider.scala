@@ -7,8 +7,8 @@ import org.apache.flink.contrib.streaming.state.{PredefinedOptions, RocksDBState
 import org.apache.flink.runtime.execution.librarycache.FlinkUserCodeClassLoaders
 import org.apache.flink.runtime.state.StateBackend
 import org.apache.flink.streaming.api.TimeCharacteristic
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
 import org.apache.flink.streaming.api.operators.{SimpleOperatorFactory, StreamOperatorFactory}
-import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.streaming.runtime.operators.TimestampsAndWatermarksOperator
 import pl.touk.nussknacker.engine.deployment.DeploymentData
 import pl.touk.nussknacker.engine.process.compiler.FlinkProcessCompilerData
@@ -46,7 +46,7 @@ class Flink111StreamExecutionEnvPreparerProvider extends FlinkCompatibilityProvi
 
       override def postRegistration(env: StreamExecutionEnvironment, compiledProcessWithDeps: FlinkProcessCompilerData, deploymentData: DeploymentData): Unit = {
         super.postRegistration(env, compiledProcessWithDeps, deploymentData)
-        val hasWatermarks = env.getStreamGraph("", clearTransformations = false).getAllOperatorFactory
+        val hasWatermarks = env.getStreamGraph("", false).getAllOperatorFactory
           .asScala.toSet[tuple.Tuple2[Integer, StreamOperatorFactory[_]]].map(_.f1).exists {
           case factory: SimpleOperatorFactory[_] => factory.getOperator.isInstanceOf[TimestampsAndWatermarksOperator[_]]
           case _ => false

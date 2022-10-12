@@ -5,8 +5,9 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory.fromAnyRef
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.JobExecutionResult
+import org.apache.flink.streaming.api.datastream.DataStream
 import org.apache.flink.streaming.api.functions.{AssignerWithPunctuatedWatermarks, KeyedProcessFunction}
-import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment, createTypeInformation}
+import org.apache.flink.streaming.api.scala.createTypeInformation
 import org.apache.flink.streaming.api.watermark.Watermark
 import org.apache.flink.util.Collector
 import org.scalatest.funsuite.AnyFunSuiteLike
@@ -62,7 +63,7 @@ trait BaseTimestampTest extends AnyFunSuiteLike with BeforeAndAfterAll with Befo
     val modelData = LocalModelData(prepareConfig, creator)
     val env = flinkMiniCluster.createExecutionEnvironment()
     val registrar = FlinkProcessRegistrar(new FlinkProcessCompiler(modelData), ExecutionConfigPreparer.unOptimizedChain(modelData))
-    registrar.register(new StreamExecutionEnvironment(env), process, ProcessVersion.empty, DeploymentData.empty)
+    registrar.register(env, process, ProcessVersion.empty, DeploymentData.empty)
     env.executeAndWaitForFinished(process.id)()
 
   }
@@ -107,7 +108,7 @@ object CheckTimeTransformer extends CustomStreamTransformer {
   @MethodToInvoke
   def invoke(): FlinkCustomStreamTransformation = {
     (start: DataStream[Context], _: FlinkCustomNodeContext) => {
-      start.keyBy(_ => "").process(new KeyedProcessFunction[String, Context, ValueWithContext[AnyRef]] {
+      start.keyBy((_: Context) => "").process(new KeyedProcessFunction[String, Context, ValueWithContext[AnyRef]] {
 
         override def processElement(value: api.Context, ctx: KeyedProcessFunction[String, api.Context, ValueWithContext[AnyRef]]#Context, out: Collector[ValueWithContext[AnyRef]]): Unit = {
           ctx.timerService().registerEventTimeTimer(ctx.timestamp() + timeToAdd)
