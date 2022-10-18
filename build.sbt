@@ -20,7 +20,7 @@ val kafkaV = "2.8.1"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val defaultNussknackerV = "1.6.0-staging-2022-09-13-9442-41b5521725718a4a5ede8ced454efdd445c430b9-SNAPSHOT"
+val defaultNussknackerV = "1.6.0"
 
 val nussknackerV = {
   val v = sys.env.get("NUSSKNACKER_VERSION").filterNot(_.isBlank).getOrElse(defaultNussknackerV)
