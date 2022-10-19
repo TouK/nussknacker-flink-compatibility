@@ -1,5 +1,4 @@
 import sbt.Keys._
-import sbtassembly.AssemblyPlugin.autoImport
 import sbtassembly.AssemblyPlugin.autoImport.assembly
 import sbtassembly.{MergeStrategy, PathList}
 
@@ -20,7 +19,7 @@ val kafkaV = "2.8.1"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val defaultNussknackerV = "1.6.0-staging-2022-09-13-9442-41b5521725718a4a5ede8ced454efdd445c430b9-SNAPSHOT"
+val defaultNussknackerV = "1.6.0"
 
 val nussknackerV = {
   val v = sys.env.get("NUSSKNACKER_VERSION").filterNot(_.isBlank).getOrElse(defaultNussknackerV)
@@ -252,6 +251,8 @@ def nussknackerAssemblyStrategy: String => MergeStrategy = {
   case PathList(ps@_*) if ps.last.matches("FlinkMetricsProviderForScenario.*.class") => MergeStrategy.first
   case PathList(ps@_*) if ps.last == "MetricUtils.class" => MergeStrategy.first
   case PathList(ps@_*) if ps.head == "draftv4" && ps.last == "schema" => MergeStrategy.first //Due to swagger-parser dependencies having different schema definitions
+  case PathList(ps@_*) if ps.last.matches("CollectionSource.*.class") => MergeStrategy.first
+
 
 
   case x => MergeStrategy.defaultMergeStrategy(x)
