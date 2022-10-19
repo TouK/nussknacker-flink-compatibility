@@ -1,5 +1,4 @@
 import sbt.Keys._
-import sbtassembly.AssemblyPlugin.autoImport
 import sbtassembly.AssemblyPlugin.autoImport.assembly
 import sbtassembly.{MergeStrategy, PathList}
 
@@ -20,7 +19,7 @@ val kafkaV = "2.8.1"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val defaultNussknackerV = "1.7.0-staging-2022-10-12-9839-4a1deafa5c209803f0b18942d8c4d3f07b1712f1-SNAPSHOT"
+val defaultNussknackerV = "1.7.0-staging-2022-10-18-9967-4c86817c9c495f2bc31b3258c7d902eeed93c96f-SNAPSHOT"
 
 val nussknackerV = {
   val v = sys.env.get("NUSSKNACKER_VERSION").filterNot(_.isBlank).getOrElse(defaultNussknackerV)
