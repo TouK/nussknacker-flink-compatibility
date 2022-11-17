@@ -11,15 +11,14 @@ val scalaCollectionsCompatV = "2.3.2"
 val silencerV_2_12 = "1.6.0"
 val silencerV = "1.7.0"
 
-val flink111V = "1.11.3"
 val flink114V = "1.14.5"
-val currentFlinkV = "1.15.2"
+val currentFlinkV = "1.16.0"
 val sttpV = "2.2.9"
 val kafkaV = "2.8.1"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val defaultNussknackerV = "1.7.0-staging-2022-10-18-9967-4c86817c9c495f2bc31b3258c7d902eeed93c96f-SNAPSHOT"
+val defaultNussknackerV = "1.7.0-preview_flink_1_16-2022-11-17-10243-b758b983c376c9b0db2045bfa5b36f7297e1f4c3-SNAPSHOT"
 
 val nussknackerV = {
   val v = sys.env.get("NUSSKNACKER_VERSION").filterNot(_.isBlank).getOrElse(defaultNussknackerV)
@@ -92,40 +91,11 @@ lazy val commonTest = (project in file("commonTest")).
       "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
       "pl.touk.nussknacker" %% "nussknacker-flink-kafka-components" % nussknackerV,
       "com.softwaremill.sttp.client" %% "async-http-client-backend-future" % sttpV,
+    ),
+    dependencyOverrides ++= Seq(
+      "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
     )
   )
-
-lazy val flink111ModelCompat = (project in file("flink111/model")).
-  settings(commonSettings(scala212V)).
-  settings(flinkSettingsCommonForBefore1_14(flink111V)).
-  settings(
-    name := "flink111-model",
-    libraryDependencies ++= deps(flink111V),
-    dependencyOverrides ++= Seq(
-      //???
-      "org.apache.kafka" % "kafka-clients" % kafkaV,
-    )
-  ).dependsOn(commonTest % "test")
-
-lazy val flink111ManagerCompat = (project in file("flink111/manager")).
-  settings(commonSettings(scala212V)).
-  configs(IntegrationTest).
-  settings(Defaults.itSettings).
-  settings(flinkSettingsCommonForBefore1_14(flink111V)).
-  settings(
-    name := "flink111-manager",
-    libraryDependencies ++= managerDeps(flink111V),
-    dependencyOverrides ++= Seq(
-      //For some strange reason, docker client libraries have conflict with schema registry client :/
-      "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
-      // must be the same as used by flink - otherwise it is evicted by version from deployment-manager-api
-      "com.typesafe.akka" %% "akka-actor" % "2.5.21"
-    ),
-    IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
-      flink111ModelCompat / Compile / assembly
-    ).value,
-  ).dependsOn(commonTest)
-
 
 lazy val flink114ModelCompat = (project in file("flink114/model")).
   settings(commonSettings(scala212V)).
@@ -151,16 +121,13 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager")).
       "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
       // must be the same as used by flink - otherwise it is evicted by version from deployment-manager-api
       "com.typesafe.akka" %% "akka-actor" % "2.5.21",
+
+      "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
     ),
     IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
       flink114ModelCompat / Compile / assembly
     ).value,
   ).dependsOn(commonTest)
-
-def flinkExclusionsForBefore1_14 = Seq(
-  "org.apache.flink" % "flink-runtime",
-  "org.apache.flink" % "flink-queryable-state-runtime"
-) ++ flinkExclusionsForBefore1_15
 
 def flinkExclusionsForBefore1_15 = Seq(
   "org.apache.flink" % "flink-streaming-java",
@@ -168,14 +135,6 @@ def flinkExclusionsForBefore1_15 = Seq(
   "org.apache.flink" % "flink-connector-kafka",
   "org.apache.flink" % "flink-test-utils"
 )
-
-def flinkDependenciesCommonForBefore1_14(version: String) = Seq(
-  "org.apache.flink" % "flink-runtime" % version,
-  "org.apache.flink" % "flink-queryable-state-runtime" % version
-) ++ flinkDependenciesCommonForBefore1_15(version: String)
-
-def flinkOverridesCommonForBefore1_14(version: String) =
-  flinkDependenciesCommonForBefore1_14(version)
 
 def flinkDependenciesCommonForBefore1_15(version: String) = Seq(
   "org.apache.flink" %% "flink-connector-kafka" % version % "provided",
@@ -186,12 +145,6 @@ def flinkDependenciesCommonForBefore1_15(version: String) = Seq(
 
 def flinkOverridesCommonForBefore1_15(version: String) =
   flinkDependenciesCommonForBefore1_15(version)
-
-def flinkSettingsCommonForBefore1_14(version: String) = Seq(
-  excludeDependencies ++= flinkExclusionsForBefore1_14,
-  libraryDependencies ++= flinkDependenciesCommonForBefore1_14(version),
-  dependencyOverrides ++= flinkOverrides(version) ++ flinkOverridesCommonForBefore1_14(version)
-)
 
 def flinkSettingsCommonForBefore1_15(version: String) = Seq(
   excludeDependencies ++= flinkExclusionsForBefore1_15,
@@ -253,7 +206,8 @@ def nussknackerAssemblyStrategy: String => MergeStrategy = {
   case PathList(ps@_*) if ps.head == "draftv4" && ps.last == "schema" => MergeStrategy.first //Due to swagger-parser dependencies having different schema definitions
   case PathList(ps@_*) if ps.last.matches("CollectionSource.*.class") => MergeStrategy.first
 
-
+  case PathList("com", "esotericsoftware", "minlog", "Log.class") => MergeStrategy.first
+  case PathList("com", "esotericsoftware", "minlog", "Log$Logger.class") => MergeStrategy.first
 
   case x => MergeStrategy.defaultMergeStrategy(x)
 }

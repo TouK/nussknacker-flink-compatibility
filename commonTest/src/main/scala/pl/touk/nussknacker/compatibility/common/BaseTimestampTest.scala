@@ -30,8 +30,6 @@ import pl.touk.nussknacker.engine.testing.LocalModelData
 import pl.touk.nussknacker.engine.{api, spel}
 import pl.touk.nussknacker.test.VeryPatientScalaFutures
 
-import scala.annotation.nowarn
-
 //This test checks if handling of setTimeCharacteristic based of TimestampAssigner presence works well after removal from Nussknacker
 trait BaseTimestampTest extends AnyFunSuiteLike with BeforeAndAfterAll with BeforeAndAfter with Matchers with VeryPatientScalaFutures with LazyLogging {
 
@@ -76,7 +74,6 @@ trait BaseTimestampTest extends AnyFunSuiteLike with BeforeAndAfterAll with Befo
 }
 
 @silent("deprecated")
-@nowarn("cat=deprecation")
 class FixedWatermarks(customFixedTime: Long) extends AssignerWithPunctuatedWatermarks[String]() {
   override def checkAndGetNextWatermark(lastElement: String, extractedTimestamp: Long): Watermark = new Watermark(extractedTimestamp)
 
