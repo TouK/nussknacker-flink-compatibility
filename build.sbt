@@ -18,7 +18,7 @@ val kafkaV = "2.8.1"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val defaultNussknackerV = "1.7.0-preview_flink_1_16-2022-11-17-10243-b758b983c376c9b0db2045bfa5b36f7297e1f4c3-SNAPSHOT"
+val defaultNussknackerV = "1.7.0-staging-2022-11-24-10367-a5b4eb5ff8c89f942612b6c4e08c411d679e8b25-SNAPSHOT"
 
 val nussknackerV = {
   val v = sys.env.get("NUSSKNACKER_VERSION").filterNot(_.isBlank).getOrElse(defaultNussknackerV)
@@ -104,7 +104,8 @@ lazy val flink114ModelCompat = (project in file("flink114/model")).
     name := "flink114-model",
     libraryDependencies ++= deps(flink114V),
     dependencyOverrides ++= Seq(
-      "org.apache.kafka" % "kafka-clients" % kafkaV
+      "org.apache.kafka" % "kafka-clients" % kafkaV,
+      "org.apache.kafka" %% "kafka" % kafkaV,
     ),
   ).dependsOn(commonTest % "test,it")
 
