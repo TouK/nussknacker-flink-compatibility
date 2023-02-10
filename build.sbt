@@ -28,6 +28,7 @@ val nussknackerV = {
 
 val scalaTestV = "3.0.8"
 
+
 def commonSettings(scalaV: String) =
   Seq(
     organization := "pl.touk.nussknacker.flinkcompatibility",
