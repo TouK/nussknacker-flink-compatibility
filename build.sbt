@@ -31,6 +31,7 @@ def commonSettings(scalaV: String) =
     organization := "pl.touk.nussknacker.flinkcompatibility",
     resolvers ++= Seq(
       Resolver.sonatypeRepo("public"),
+      Resolver.sonatypeRepo("snapshots"), // todo
       Opts.resolver.sonatypeSnapshots,
       "confluent" at "https://packages.confluent.io/maven",
       "nexus" at sys.env.getOrElse("nexus", "https://nexus.touk.pl/nexus/content/groups/public")
@@ -91,7 +92,8 @@ lazy val commonTest = (project in file("commonTest")).
       "com.softwaremill.sttp.client" %% "async-http-client-backend-future" % sttpV,
     ),
     dependencyOverrides ++= Seq(
-      "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
+      "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
+      "org.scala-lang.modules" %% "scala-xml" % "2.1.0"
     )
   )
 
@@ -120,13 +122,12 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager")).
       "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
       // must be the same as used by flink - otherwise it is evicted by version from deployment-manager-api
       "com.typesafe.akka" %% "akka-actor" % "2.6.20",
-
       "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
     ),
     IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
       flink114ModelCompat / Compile / assembly
     ).value,
-  ).dependsOn(commonTest)
+  ).dependsOn(commonTest % "test,it")
 
 def flinkExclusionsForBefore1_15 = Seq(
   "org.apache.flink" % "flink-streaming-java",
