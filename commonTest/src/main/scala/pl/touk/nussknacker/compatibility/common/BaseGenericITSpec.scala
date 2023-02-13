@@ -171,15 +171,16 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
       .parallelism(1)
       .source(
         "start",
-        "kafka-avro",
+        "kafka",
         KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.input}'",
         KafkaUniversalComponentTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
       )
       .filter("name-filter", "#input.first == 'Jan'")
       .emptySink(
         "end",
-        "kafka-avro-raw",
+        "kafka",
         KafkaUniversalComponentTransformer.SinkKeyParamName -> "",
+        KafkaUniversalComponentTransformer.SinkRawEditorParamName -> "true",
         KafkaUniversalComponentTransformer.SinkValueParamName -> "#input",
         KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.output}'",
         KafkaUniversalComponentTransformer.SchemaVersionParamName -> s"'${SchemaVersionOption.LatestOptionName}'",
@@ -193,20 +194,20 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
       .parallelism(1)
       .source(
         "start",
-        "kafka-avro",
+        "kafka",
         KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.input}'",
         KafkaUniversalComponentTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
       )
       .emptySink(
         "end",
-        "kafka-avro-raw",
+        "kafka",
         KafkaUniversalComponentTransformer.SinkKeyParamName -> "",
+        KafkaUniversalComponentTransformer.SinkRawEditorParamName -> "true",
         KafkaUniversalComponentTransformer.SinkValueParamName -> s"{first: #input.first, last: #input.last}",
         KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.output}'",
         KafkaUniversalComponentTransformer.SinkValidationModeParameterName -> s"'${ValidationMode.strict.name}'",
         KafkaUniversalComponentTransformer.SchemaVersionParamName -> "'1'"
       )
-
   private def versionOptionParam(versionOption: SchemaVersionOption) =
     versionOption match {
       case LatestSchemaVersion => s"'${SchemaVersionOption.LatestOptionName}'"
