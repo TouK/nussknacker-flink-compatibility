@@ -4,7 +4,7 @@ import sbtassembly.{MergeStrategy, PathList}
 
 val scala212V = "2.12.10"
 
-val scalaCollectionsCompatV = "2.3.2"
+val scalaCollectionsCompatV = "2.9.0"
 
 // Silencer must be compatible with exact scala version - see compatibility matrix: https://search.maven.org/search?q=silencer-plugin
 // Silencer 1.7.x require Scala 2.12.11 (see warning above)
@@ -14,19 +14,17 @@ val silencerV = "1.7.0"
 val flink114V = "1.14.5"
 val currentFlinkV = "1.16.0"
 val sttpV = "2.2.9"
-val kafkaV = "2.8.1"
+val kafkaV = "3.3.1"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val defaultNussknackerV = "1.7.0"
+val defaultNussknackerV = "1.8.0"
 
 val nussknackerV = {
   val v = sys.env.get("NUSSKNACKER_VERSION").filterNot(_.isBlank).getOrElse(defaultNussknackerV)
   println(s"Nussknacker version: $v")
   v
 }
-
-val scalaTestV = "3.0.8"
 
 def commonSettings(scalaV: String) =
   Seq(
@@ -93,7 +91,8 @@ lazy val commonTest = (project in file("commonTest")).
       "com.softwaremill.sttp.client" %% "async-http-client-backend-future" % sttpV,
     ),
     dependencyOverrides ++= Seq(
-      "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
+      "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
+      "org.scala-lang.modules" %% "scala-xml" % "2.1.0"
     )
   )
 
@@ -121,14 +120,13 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager")).
       //For some strange reason, docker client libraries have conflict with schema registry client :/
       "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
       // must be the same as used by flink - otherwise it is evicted by version from deployment-manager-api
-      "com.typesafe.akka" %% "akka-actor" % "2.5.21",
-
+      "com.typesafe.akka" %% "akka-actor" % "2.6.20",
       "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
     ),
     IntegrationTest / Keys.test := (IntegrationTest / Keys.test).dependsOn(
       flink114ModelCompat / Compile / assembly
     ).value,
-  ).dependsOn(commonTest)
+  ).dependsOn(commonTest % "test,it")
 
 def flinkExclusionsForBefore1_15 = Seq(
   "org.apache.flink" % "flink-streaming-java",
