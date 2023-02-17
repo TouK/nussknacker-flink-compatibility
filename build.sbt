@@ -31,7 +31,6 @@ def commonSettings(scalaV: String) =
     organization := "pl.touk.nussknacker.flinkcompatibility",
     resolvers ++= Seq(
       Resolver.sonatypeRepo("public"),
-      Resolver.sonatypeRepo("snapshots"), // todo
       Opts.resolver.sonatypeSnapshots,
       "confluent" at "https://packages.confluent.io/maven",
       "nexus" at sys.env.getOrElse("nexus", "https://nexus.touk.pl/nexus/content/groups/public")
