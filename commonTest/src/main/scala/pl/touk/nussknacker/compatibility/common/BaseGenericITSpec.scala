@@ -9,22 +9,25 @@ import io.confluent.kafka.serializers.{KafkaAvroDeserializer, KafkaAvroSerialize
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.flink.api.common.ExecutionConfig
+import org.apache.kafka.clients.producer.RecordMetadata
 import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
-import org.scalatest.{FunSuiteLike, Matchers}
-import pl.touk.nussknacker.defaultmodel.{DefaultConfigCreator}
+import org.scalatest.funsuite.AnyFunSuiteLike
+import org.scalatest.matchers.should.Matchers
+import pl.touk.nussknacker.defaultmodel.DefaultConfigCreator
 import pl.touk.nussknacker.engine.api.CirceUtil.decodeJsonUnsafe
 import pl.touk.nussknacker.engine.api.process.ProcessObjectDependencies
+import pl.touk.nussknacker.engine.api.validation.ValidationMode
 import pl.touk.nussknacker.engine.api.{JobData, ProcessVersion}
 import pl.touk.nussknacker.engine.schemedkafka._
-import pl.touk.nussknacker.engine.schemedkafka.encode.{BestEffortAvroEncoder, ValidationMode}
+import pl.touk.nussknacker.engine.schemedkafka.encode.BestEffortAvroEncoder
 import pl.touk.nussknacker.engine.schemedkafka.kryo.AvroSerializersRegistrar
 import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.confluent.ConfluentUtils
 import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.confluent.client.{MockConfluentSchemaRegistryClientFactory, MockSchemaRegistryClient}
 import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.{ExistingSchemaVersion, LatestSchemaVersion, SchemaVersionOption}
 import pl.touk.nussknacker.engine.build.ScenarioBuilder
+import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
 import pl.touk.nussknacker.engine.deployment.DeploymentData
 import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder
-import pl.touk.nussknacker.engine.graph.EspProcess
 import pl.touk.nussknacker.engine.kafka.{KafkaConfig, KafkaSpec, KafkaTestUtils}
 import pl.touk.nussknacker.engine.process.ExecutionConfigPreparer
 import pl.touk.nussknacker.engine.process.ExecutionConfigPreparer.{ProcessSettingsPreparer, UnoptimizedSerializationPreparer}
@@ -37,6 +40,7 @@ import pl.touk.nussknacker.engine.util.namespaces.ObjectNamingProvider
 import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import scala.concurrent.Future
 
 /*
   This trait should be based on GenericITSpec:
@@ -47,13 +51,12 @@ import java.time.temporal.ChronoUnit
   - `def creator: GenericConfigCreator` made protected
   - checkpointDataUri config added
  */
-trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with LazyLogging {
+trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec with LazyLogging {
 
   protected def flinkMiniCluster: FlinkMiniClusterHolder
 
   import KafkaTestUtils._
   import MockSchemaRegistry._
-  import org.apache.flink.streaming.api.scala._
   import spel.Implicits._
 
   override lazy val config: Config = ConfigFactory.load()
@@ -168,15 +171,16 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
       .parallelism(1)
       .source(
         "start",
-        "kafka-avro",
+        "kafka",
         KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.input}'",
         KafkaUniversalComponentTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
       )
       .filter("name-filter", "#input.first == 'Jan'")
       .emptySink(
         "end",
-        "kafka-avro-raw",
+        "kafka",
         KafkaUniversalComponentTransformer.SinkKeyParamName -> "",
+        KafkaUniversalComponentTransformer.SinkRawEditorParamName -> "true",
         KafkaUniversalComponentTransformer.SinkValueParamName -> "#input",
         KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.output}'",
         KafkaUniversalComponentTransformer.SchemaVersionParamName -> s"'${SchemaVersionOption.LatestOptionName}'",
@@ -190,20 +194,20 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
       .parallelism(1)
       .source(
         "start",
-        "kafka-avro",
+        "kafka",
         KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.input}'",
         KafkaUniversalComponentTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
       )
       .emptySink(
         "end",
-        "kafka-avro-raw",
+        "kafka",
         KafkaUniversalComponentTransformer.SinkKeyParamName -> "",
+        KafkaUniversalComponentTransformer.SinkRawEditorParamName -> "true",
         KafkaUniversalComponentTransformer.SinkValueParamName -> s"{first: #input.first, last: #input.last}",
         KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.output}'",
         KafkaUniversalComponentTransformer.SinkValidationModeParameterName -> s"'${ValidationMode.strict.name}'",
         KafkaUniversalComponentTransformer.SchemaVersionParamName -> "'1'"
       )
-
   private def versionOptionParam(versionOption: SchemaVersionOption) =
     versionOption match {
       case LatestSchemaVersion => s"'${SchemaVersionOption.LatestOptionName}'"
@@ -352,13 +356,13 @@ trait BaseGenericITSpec extends FunSuiteLike with Matchers with KafkaSpec with L
     )
   }
 
-  private def run(process: EspProcess)(action: => Unit): Unit = {
+  private def run(process: CanonicalProcess)(action: => Unit): Unit = {
     val env = flinkMiniCluster.createExecutionEnvironment()
-    registrar.register(new StreamExecutionEnvironment(env), process, ProcessVersion.empty, DeploymentData.empty)
+    registrar.register(env, process, ProcessVersion.empty, DeploymentData.empty)
     env.withJobRunning(process.id)(action)
   }
 
-  protected def sendAvro(obj: Any, topic: String, timestamp: java.lang.Long = null) = {
+  protected def sendAvro(obj: Any, topic: String, timestamp: java.lang.Long = null): Future[RecordMetadata] = {
     val serializedObj = valueSerializer.serialize(topic, obj)
     kafkaClient.sendRawMessage(topic, Array.empty, serializedObj, timestamp = timestamp)
   }
@@ -431,7 +435,7 @@ object MockSchemaRegistry extends Serializable {
 
   val RecordSchemaV2: Schema = AvroUtils.parseSchema(RecordSchemaStringV2)
 
-  val RecordSchemas = List(RecordSchemaV1, RecordSchemaV2)
+  val RecordSchemas: List[Schema] = List(RecordSchemaV1, RecordSchemaV2)
 
   val SecondRecordSchemaStringV1: String =
     """{

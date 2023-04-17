@@ -4,12 +4,15 @@ import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory.fromAnyRef
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.flink.api.common.ExecutionConfig
+import org.apache.flink.api.common.JobExecutionResult
+import org.apache.flink.streaming.api.datastream.DataStream
 import org.apache.flink.streaming.api.functions.{AssignerWithPunctuatedWatermarks, KeyedProcessFunction}
-import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment, createTypeInformation}
+import org.apache.flink.streaming.api.scala.createTypeInformation
 import org.apache.flink.streaming.api.watermark.Watermark
 import org.apache.flink.util.Collector
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuiteLike, Matchers}
+import org.scalatest.funsuite.AnyFunSuiteLike
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import pl.touk.nussknacker.engine.api._
 import pl.touk.nussknacker.engine.api.process._
 import pl.touk.nussknacker.engine.api.typed.typing.Typed
@@ -27,10 +30,8 @@ import pl.touk.nussknacker.engine.testing.LocalModelData
 import pl.touk.nussknacker.engine.{api, spel}
 import pl.touk.nussknacker.test.VeryPatientScalaFutures
 
-import scala.annotation.nowarn
-
 //This test checks if handling of setTimeCharacteristic based of TimestampAssigner presence works well after removal from Nussknacker
-trait BaseTimestampTest extends FunSuiteLike with BeforeAndAfterAll with BeforeAndAfter with Matchers with VeryPatientScalaFutures with LazyLogging {
+trait BaseTimestampTest extends AnyFunSuiteLike with BeforeAndAfterAll with BeforeAndAfter with Matchers with VeryPatientScalaFutures with LazyLogging {
 
   protected def flinkMiniCluster: FlinkMiniClusterHolder
 
@@ -38,23 +39,16 @@ trait BaseTimestampTest extends FunSuiteLike with BeforeAndAfterAll with BeforeA
     SinkForLongs.clear()
   }
 
-  test("should handle ingestion time") {
-    //we check if ingestion time is used (processingTime would not fire eventTime timer)
-    runWithAssigner(None)
-
-    //5 seconds should be enough to run this test...
-    SinkForLongs.data.head.toDouble shouldBe (System.currentTimeMillis().toDouble +- 5000)
-  }
-
   test("should handle event time") {
 
     val customFixedTime = System.currentTimeMillis() + 1000000
 
     runWithAssigner(Some(new LegacyTimestampWatermarkHandler[String](new FixedWatermarks(customFixedTime))))
+
     SinkForLongs.data shouldBe List(customFixedTime + CheckTimeTransformer.timeToAdd)
   }
 
-  private def runWithAssigner(assigner: Option[TimestampWatermarkHandler[String]]) = {
+  protected def runWithAssigner(assigner: Option[TimestampWatermarkHandler[String]]): JobExecutionResult = {
     import spel.Implicits._
     val process = ScenarioBuilder.streaming("timestamps")
       .parallelism(1)
@@ -67,7 +61,7 @@ trait BaseTimestampTest extends FunSuiteLike with BeforeAndAfterAll with BeforeA
     val modelData = LocalModelData(prepareConfig, creator)
     val env = flinkMiniCluster.createExecutionEnvironment()
     val registrar = FlinkProcessRegistrar(new FlinkProcessCompiler(modelData), ExecutionConfigPreparer.unOptimizedChain(modelData))
-    registrar.register(new StreamExecutionEnvironment(env), process, ProcessVersion.empty, DeploymentData.empty)
+    registrar.register(env, process, ProcessVersion.empty, DeploymentData.empty)
     env.executeAndWaitForFinished(process.id)()
 
   }
@@ -80,7 +74,6 @@ trait BaseTimestampTest extends FunSuiteLike with BeforeAndAfterAll with BeforeA
 }
 
 @silent("deprecated")
-@nowarn("cat=deprecation")
 class FixedWatermarks(customFixedTime: Long) extends AssignerWithPunctuatedWatermarks[String]() {
   override def checkAndGetNextWatermark(lastElement: String, extractedTimestamp: Long): Watermark = new Watermark(extractedTimestamp)
 
@@ -112,7 +105,7 @@ object CheckTimeTransformer extends CustomStreamTransformer {
   @MethodToInvoke
   def invoke(): FlinkCustomStreamTransformation = {
     (start: DataStream[Context], _: FlinkCustomNodeContext) => {
-      start.keyBy(_ => "").process(new KeyedProcessFunction[String, Context, ValueWithContext[AnyRef]] {
+      start.keyBy((_: Context) => "").process(new KeyedProcessFunction[String, Context, ValueWithContext[AnyRef]] {
 
         override def processElement(value: api.Context, ctx: KeyedProcessFunction[String, api.Context, ValueWithContext[AnyRef]]#Context, out: Collector[ValueWithContext[AnyRef]]): Unit = {
           ctx.timerService().registerEventTimeTimer(ctx.timestamp() + timeToAdd)
