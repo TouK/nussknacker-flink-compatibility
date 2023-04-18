@@ -131,7 +131,7 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
       .streaming("json-test")
       .parallelism(1)
       .source("start", "kafka-typed-json",
-        "topic" -> s"'$JsonInTopic'",
+        "Topic" -> s"'$JsonInTopic'",
         "type" ->
           """{
             |  "first": "String",
@@ -142,7 +142,7 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
             |}""".stripMargin
       )
       .filter("name-filter", filter)
-      .emptySink("end",  "kafka-json", "topic" -> s"'$JsonOutTopic'", "value" -> "#input")
+      .emptySink("end",  "kafka-json", "Topic" -> s"'$JsonOutTopic'", "Value" -> "#input")
 
   private def jsonSchemedProcess(topicConfig: TopicConfig, versionOption: SchemaVersionOption, validationMode: ValidationMode = ValidationMode.strict) =
     ScenarioBuilder

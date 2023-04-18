@@ -54,7 +54,7 @@ trait BaseTimestampTest extends AnyFunSuiteLike with BeforeAndAfterAll with Befo
       .parallelism(1)
       .source("source", "source")
       .customNode("custom", "output", "check")
-      .emptySink("log", "log", "value" -> "#output")
+      .emptySink("log", "log", "Value" -> "#output")
 
     val creator = new TestCreator(assigner)
 
