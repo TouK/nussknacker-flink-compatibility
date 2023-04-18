@@ -154,7 +154,7 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
         KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.input}'",
         KafkaUniversalComponentTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
       )
-      .filter("name-filter", "#input.first == 'Xan'")
+      .filter("name-filter", "#input.first == 'Jan'")
       .emptySink(
         "end",
         "kafka-registry-typed-json-raw",
