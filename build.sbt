@@ -13,7 +13,7 @@ val silencerV = "1.7.0"
 
 val flink114V = "1.14.5"
 val currentFlinkV = "1.16.0"
-val sttpV = "2.2.9"
+val sttpV = "3.8.11"
 val kafkaV = "3.3.1"
 
 ThisBuild / version := "0.1-SNAPSHOT"
@@ -88,7 +88,7 @@ lazy val commonTest = (project in file("commonTest")).
       "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
       "pl.touk.nussknacker" %% "nussknacker-flink-kafka-components" % nussknackerV,
-      "com.softwaremill.sttp.client" %% "async-http-client-backend-future" % sttpV,
+      "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % sttpV,
     ),
     dependencyOverrides ++= Seq(
       "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
@@ -163,7 +163,7 @@ def managerDeps(version: String) = Seq(
   ),
   "com.whisk" %% "docker-testkit-scalatest" % "0.9.0" % "it,test",
   "com.whisk" %% "docker-testkit-impl-spotify" % "0.9.0" % "it,test",
-  "com.softwaremill.sttp.client" %% "async-http-client-backend-future" % sttpV,
+  "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % sttpV,
 )
 
 def deps(version: String) = Seq(

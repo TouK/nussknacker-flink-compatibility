@@ -3,6 +3,7 @@ package pl.touk.nussknacker.engine.management.common
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 import pl.touk.nussknacker.engine.api.ProcessVersion
+import pl.touk.nussknacker.engine.api.deployment.DataFreshnessPolicy
 import pl.touk.nussknacker.engine.api.process.{ProcessId, ProcessName, VersionId}
 import pl.touk.nussknacker.engine.build.ScenarioBuilder
 import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
@@ -34,6 +35,8 @@ trait CommonFlinkStreamingDeploymentManagerSpec extends AnyFunSuite with Matcher
       .emptySink("dead-end", "dead-end")
   }
 
-  private def processVersion(processId: ProcessName): Option[ProcessVersion] =
-    deploymentManager.findJobStatus(processId).futureValue.flatMap(_.version)
+  private def processVersion(processId: ProcessName): Option[ProcessVersion] = {
+    implicit val freshnessPolicy: DataFreshnessPolicy = DataFreshnessPolicy.Fresh
+    deploymentManager.getProcessState(processId).futureValue.value.flatMap(_.version)
+  }
 }
