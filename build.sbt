@@ -78,14 +78,17 @@ lazy val commonTest = (project in file("commonTest")).
       "pl.touk.nussknacker" %% "nussknacker-kafka-test-utils" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV excludeAll(
         ExclusionRule("log4j", "log4j"),
-        ExclusionRule("org.slf4j", "slf4j-log4j12")
+        ExclusionRule("org.slf4j", "slf4j-log4j12"),
+        ExclusionRule("org.apache.flink", "flink-scala_2.12"),
       ),
       "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV,
       "org.apache.flink" %% "flink-streaming-scala" % currentFlinkV % "provided",
       "com.whisk" %% "docker-testkit-scalatest" % "0.9.0",
       "com.whisk" %% "docker-testkit-impl-spotify" % "0.9.0",
 
-      "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV,
+      "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV excludeAll (
+        ExclusionRule("org.apache.flink", "flink-scala_2.12"),
+        ),
       "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
       "pl.touk.nussknacker" %% "nussknacker-flink-kafka-components" % nussknackerV,
       "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % sttpV,
@@ -152,14 +155,16 @@ def flinkSettingsCommonForBefore1_15(version: String) = Seq(
 )
 
 def managerDeps(version: String) = Seq(
-  "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV,
+  "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV excludeAll(
+    ExclusionRule("org.apache.flink", "flink-scala_2.12"),
+  ),
   "pl.touk.nussknacker" %% "nussknacker-http-utils" % nussknackerV % "provided,it,test",
   "pl.touk.nussknacker" %% "nussknacker-interpreter" % nussknackerV % "provided,it,test",
   "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
 
   "org.apache.flink" %% "flink-streaming-scala" % version excludeAll(
     ExclusionRule("log4j", "log4j"),
-    ExclusionRule("org.slf4j", "slf4j-log4j12")
+    ExclusionRule("org.slf4j", "slf4j-log4j12"),
   ),
   "com.whisk" %% "docker-testkit-scalatest" % "0.9.0" % "it,test",
   "com.whisk" %% "docker-testkit-impl-spotify" % "0.9.0" % "it,test",
@@ -179,6 +184,7 @@ def deps(version: String) = Seq(
 
 def flinkOverrides(version: String) = Seq(
   "org.apache.flink" %% "flink-streaming-scala" % version % "provided",
+  "org.apache.flink" %% "flink-scala" % version % "provided",
   "org.apache.flink" %% "flink-statebackend-rocksdb" % version % "provided",
   "org.apache.flink" % "flink-avro" % version,
   "org.apache.flink" %% "flink-runtime" % version % "provided",
