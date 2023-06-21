@@ -51,7 +51,6 @@ trait StreamingDockerTest extends DockerTest with Matchers {
       logger.info(s"Waiting for deploy: ${process.id}, $jobStatus")
 
       jobStatus.value.map(_.status.name) shouldBe Some(SimpleStateStatus.Running.name)
-      jobStatus.value.map(_.status.isRunning) shouldBe Some(true)
     }
   }
 
@@ -67,7 +66,7 @@ trait StreamingDockerTest extends DockerTest with Matchers {
         .getProcessState(ProcessName(processId))
         .futureValue
         .value
-        .filter(_.status.isRunning)
+        .filter(_.status.name == SimpleStateStatus.Running.name)
 
       logger.debug(s"waiting for jobs: $processId, $runningJobs")
       if (runningJobs.nonEmpty) {
