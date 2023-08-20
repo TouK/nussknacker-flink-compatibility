@@ -11,7 +11,7 @@ import org.apache.commons.io.{FileUtils, IOUtils}
 import org.scalatest.Suite
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Millis, Minutes, Span}
-import pl.touk.nussknacker.engine.ProcessingTypeConfig
+import pl.touk.nussknacker.engine.{ConfigWithUnresolvedVersion, ProcessingTypeConfig}
 import pl.touk.nussknacker.engine.deployment.User
 import pl.touk.nussknacker.engine.util.config.ScalaMajorVersionConfig
 
@@ -102,10 +102,10 @@ trait DockerTest extends DockerTestKit with ScalaFutures with Eventually with La
       PosixFilePermissions.asFileAttribute(PosixFilePermission.values().toSet[PosixFilePermission].asJava))
   }
 
-  def config: Config = ConfigFactory.load()
+  def config: ConfigWithUnresolvedVersion = ConfigWithUnresolvedVersion(ConfigFactory.load()
     .withValue("deploymentConfig.restUrl", fromAnyRef(s"http://${jobManagerContainer.getIpAddresses().futureValue.head}:$FlinkJobManagerRestPort"))
     .withValue("modelConfig.classPath", ConfigValueFactory.fromIterable(Collections.singletonList(classPath)))
-    .withFallback(additionalConfig)
+    .withFallback(additionalConfig))
 
   def processingTypeConfig: ProcessingTypeConfig = ProcessingTypeConfig.read(config)
 
