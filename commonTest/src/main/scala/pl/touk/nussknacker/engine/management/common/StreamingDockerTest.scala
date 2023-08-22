@@ -47,10 +47,10 @@ trait StreamingDockerTest extends DockerTest with Matchers {
     deployProcess(process, processVersion, savepointPath)
 
     eventually {
-      val jobStatus = deploymentManager.getProcessState(ProcessName(process.id)).futureValue
+      val jobStatus = deploymentManager.getProcessStates(ProcessName(process.id)).futureValue
       logger.info(s"Waiting for deploy: ${process.id}, $jobStatus")
 
-      jobStatus.value.map(_.status.name) shouldBe Some(SimpleStateStatus.Running.name)
+      jobStatus.value.map(_.status.name) shouldBe List(SimpleStateStatus.Running.name)
     }
   }
 
@@ -63,7 +63,7 @@ trait StreamingDockerTest extends DockerTest with Matchers {
     assert(deploymentManager.cancel(ProcessName(processId), user = userToAct).isReadyWithin(10 seconds))
     eventually {
       val runningJobs = deploymentManager
-        .getProcessState(ProcessName(processId))
+        .getProcessStates(ProcessName(processId))
         .futureValue
         .value
         .filter(_.status.name == SimpleStateStatus.Running.name)
