@@ -8,7 +8,6 @@ import pl.touk.nussknacker.engine.api.process.{ProcessId, ProcessName, VersionId
 import pl.touk.nussknacker.engine.build.ScenarioBuilder
 import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
 import pl.touk.nussknacker.engine.spel.Implicits._
-import pl.touk.nussknacker.engine.util.config.ScalaMajorVersionConfig
 
 trait CommonFlinkStreamingDeploymentManagerSpec extends AnyFunSuite with Matchers with StreamingDockerTest {
   test("deploy scenario in running flink") {
@@ -19,7 +18,7 @@ trait CommonFlinkStreamingDeploymentManagerSpec extends AnyFunSuite with Matcher
 
     deployProcessAndWaitIfRunning(process, version)
 
-    processVersion(ProcessName(processId)) shouldBe Some(version)
+    processVersions(ProcessName(processId)) shouldBe List(version)
 
     cancelProcess(processId)
   }
@@ -35,8 +34,8 @@ trait CommonFlinkStreamingDeploymentManagerSpec extends AnyFunSuite with Matcher
       .emptySink("dead-end", "dead-end")
   }
 
-  private def processVersion(processId: ProcessName): Option[ProcessVersion] = {
+  private def processVersions(processId: ProcessName): List[ProcessVersion] = {
     implicit val freshnessPolicy: DataFreshnessPolicy = DataFreshnessPolicy.Fresh
-    deploymentManager.getProcessState(processId).futureValue.value.flatMap(_.version)
+    deploymentManager.getProcessStates(processId).futureValue.value.flatMap(_.version)
   }
 }
