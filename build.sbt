@@ -18,7 +18,7 @@ val kafkaV = "3.3.1"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val defaultNussknackerV = "1.11.0"
+val defaultNussknackerV = "1.11.3"
 
 val nussknackerV = {
   val v = sys.env
