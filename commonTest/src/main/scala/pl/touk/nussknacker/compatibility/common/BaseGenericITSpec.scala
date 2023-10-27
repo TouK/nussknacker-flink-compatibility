@@ -234,10 +234,10 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
       "#input.list2[0] != 15")
     run(validJsonProcess) {
       val consumer = kafkaClient.createConsumer()
-      val processedMessage = consumer.consume(JsonOutTopic, secondsToWaitForAvro).head
+      val processedMessage = consumer.consumeWithConsumerRecord(JsonOutTopic, secondsToWaitForAvro).head
 
       processedMessage.timestamp shouldBe timeAgo
-      decodeJsonUnsafe[Json](processedMessage.message()) shouldEqual parseJson(givenMatchingJsonObj)
+      decodeJsonUnsafe[Json](processedMessage.value()) shouldEqual parseJson(givenMatchingJsonObj)
     }
   }
 
@@ -252,7 +252,7 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
     run(avroProcess(topicConfig, ExistingSchemaVersion(1), validationMode = ValidationMode.lax)) {
       val processed = consumeOneRawAvroMessage(topicConfig.output)
       processed.timestamp shouldBe timeAgo
-      valueDeserializer.deserialize(topicConfig.output, processed.message()) shouldEqual givenMatchingAvroObjConvertedToV2
+      valueDeserializer.deserialize(topicConfig.output, processed.value()) shouldEqual givenMatchingAvroObjConvertedToV2
     }
   }
 
@@ -265,9 +265,9 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
 
     run(jsonSchemedProcess(topicConfig, ExistingSchemaVersion(1), validationMode = ValidationMode.lax)) {
       val consumer = kafkaClient.createConsumer()
-      val processedMessage = consumer.consume(topicConfig.output, secondsToWaitForAvro).head
+      val processedMessage = consumer.consumeWithConsumerRecord(topicConfig.output, secondsToWaitForAvro).head
       processedMessage.timestamp shouldBe timeAgo
-      decodeJsonUnsafe[Json](processedMessage.message()) shouldEqual parseJson(givenMatchingJsonSchemedObj)
+      decodeJsonUnsafe[Json](processedMessage.value()) shouldEqual parseJson(givenMatchingJsonSchemedObj)
     }
   }
 
@@ -327,10 +327,10 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
 
   private def consumeOneRawAvroMessage(topic: String) = {
     val consumer = kafkaClient.createConsumer()
-    consumer.consume(topic, secondsToWaitForAvro).head
+    consumer.consumeWithConsumerRecord(topic, secondsToWaitForAvro).head
   }
 
-  private def consumeOneAvroMessage(topic: String) = valueDeserializer.deserialize(topic, consumeOneRawAvroMessage(topic).message())
+  private def consumeOneAvroMessage(topic: String) = valueDeserializer.deserialize(topic, consumeOneRawAvroMessage(topic).value())
 
   protected def creator: DefaultConfigCreator = new DefaultConfigCreator
 
