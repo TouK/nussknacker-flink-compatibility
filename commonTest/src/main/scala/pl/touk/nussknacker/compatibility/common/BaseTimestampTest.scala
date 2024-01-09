@@ -22,8 +22,8 @@ import pl.touk.nussknacker.engine.flink.api.process.{FlinkCustomNodeContext, Fli
 import pl.touk.nussknacker.engine.flink.api.timestampwatermark.{LegacyTimestampWatermarkHandler, TimestampWatermarkHandler}
 import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder
 import pl.touk.nussknacker.engine.flink.util.source.CollectionSource
-import pl.touk.nussknacker.engine.process.ExecutionConfigPreparer
-import pl.touk.nussknacker.engine.process.compiler.FlinkProcessCompiler
+import pl.touk.nussknacker.engine.process.{ExecutionConfigPreparer, FlinkJobConfig}
+import pl.touk.nussknacker.engine.process.compiler.FlinkProcessCompilerDataFactory
 import pl.touk.nussknacker.engine.process.helpers.SampleNodes.SinkForLongs
 import pl.touk.nussknacker.engine.process.registrar.FlinkProcessRegistrar
 import pl.touk.nussknacker.engine.testing.LocalModelData
@@ -58,9 +58,10 @@ trait BaseTimestampTest extends AnyFunSuiteLike with BeforeAndAfterAll with Befo
 
     val creator = new TestCreator(assigner)
 
-    val modelData = LocalModelData(prepareConfig, creator)
+    val modelData = LocalModelData(prepareConfig, Nil, creator)
     val env = flinkMiniCluster.createExecutionEnvironment()
-    val registrar = FlinkProcessRegistrar(new FlinkProcessCompiler(modelData), ExecutionConfigPreparer.unOptimizedChain(modelData))
+    val registrar = FlinkProcessRegistrar(new FlinkProcessCompilerDataFactory(creator, modelData.extractModelDefinitionFun, prepareConfig, modelData.objectNaming, ComponentUseCase.TestRuntime),
+      FlinkJobConfig(None, None), ExecutionConfigPreparer.unOptimizedChain(modelData))
     registrar.register(env, process, ProcessVersion.empty, DeploymentData.empty)
     env.executeAndWaitForFinished(process.id)()
 
@@ -83,17 +84,17 @@ class FixedWatermarks(customFixedTime: Long) extends AssignerWithPunctuatedWater
 class TestCreator(assigner: Option[TimestampWatermarkHandler[String]]) extends EmptyProcessConfigCreator {
 
   override def sourceFactories(processObjectDependencies: ProcessObjectDependencies): Map[String, WithCategories[SourceFactory]] = {
-    Map("source" -> WithCategories(SourceFactory.noParam[String](
+    Map("source" -> WithCategories.anyCategory(SourceFactory.noParam[String](
       new CollectionSource[String](List(""), assigner, Typed[String]))))
   }
 
 
   override def customStreamTransformers(processObjectDependencies: ProcessObjectDependencies): Map[String, WithCategories[CustomStreamTransformer]] = {
-    Map("check" -> WithCategories(CheckTimeTransformer))
+    Map("check" -> WithCategories.anyCategory(CheckTimeTransformer))
   }
 
   override def sinkFactories(processObjectDependencies: ProcessObjectDependencies): Map[String, WithCategories[SinkFactory]] = {
-    Map("log" -> WithCategories(SinkForLongs.toSinkFactory))
+    Map("log" -> WithCategories.anyCategory(SinkForLongs.toSinkFactory))
   }
 }
 
