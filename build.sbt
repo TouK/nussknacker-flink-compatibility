@@ -102,6 +102,7 @@ lazy val commonTest = (project in file("commonTest"))
       ),
       "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
       "pl.touk.nussknacker" %% "nussknacker-flink-kafka-components" % nussknackerV,
+      "pl.touk.nussknacker" %% "nussknacker-flink-base-components" % nussknackerV,
       "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % sttpV,
     ),
     dependencyOverrides ++= Seq(
