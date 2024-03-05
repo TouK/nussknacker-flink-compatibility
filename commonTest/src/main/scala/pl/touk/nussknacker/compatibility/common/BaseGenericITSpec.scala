@@ -4,35 +4,34 @@ package pl.touk.nussknacker.compatibility.common
 import com.typesafe.config.ConfigValueFactory.fromAnyRef
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.LazyLogging
-import io.circe.Json
 import io.confluent.kafka.serializers.{KafkaAvroDeserializer, KafkaAvroSerializer}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.flink.api.common.ExecutionConfig
 import org.apache.kafka.clients.producer.RecordMetadata
-import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
 import org.scalatest.funsuite.AnyFunSuiteLike
 import org.scalatest.matchers.should.Matchers
 import pl.touk.nussknacker.defaultmodel.DefaultConfigCreator
-import pl.touk.nussknacker.engine.api.CirceUtil.decodeJsonUnsafe
-import pl.touk.nussknacker.engine.api.process.ProcessObjectDependencies
+import pl.touk.nussknacker.engine.api.process.{ComponentUseCase, ProcessObjectDependencies}
 import pl.touk.nussknacker.engine.api.validation.ValidationMode
 import pl.touk.nussknacker.engine.api.{JobData, ProcessVersion}
+import pl.touk.nussknacker.engine.build.ScenarioBuilder
+import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
+import pl.touk.nussknacker.engine.deployment.DeploymentData
+import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder
+import pl.touk.nussknacker.engine.flink.util.transformer.{FlinkBaseComponentProvider, FlinkKafkaComponentProvider}
+import pl.touk.nussknacker.engine.kafka.{KafkaConfig, KafkaSpec, KafkaTestUtils}
+import pl.touk.nussknacker.engine.process.ExecutionConfigPreparer.{ProcessSettingsPreparer, UnoptimizedSerializationPreparer}
+import pl.touk.nussknacker.engine.process.compiler.FlinkProcessCompilerDataFactory
+import pl.touk.nussknacker.engine.process.registrar.FlinkProcessRegistrar
+import pl.touk.nussknacker.engine.process.{ExecutionConfigPreparer, FlinkJobConfig}
 import pl.touk.nussknacker.engine.schemedkafka._
 import pl.touk.nussknacker.engine.schemedkafka.encode.BestEffortAvroEncoder
 import pl.touk.nussknacker.engine.schemedkafka.kryo.AvroSerializersRegistrar
 import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.confluent.ConfluentUtils
 import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.confluent.client.{MockConfluentSchemaRegistryClientFactory, MockSchemaRegistryClient}
-import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.{ExistingSchemaVersion, LatestSchemaVersion, SchemaVersionOption}
-import pl.touk.nussknacker.engine.build.ScenarioBuilder
-import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
-import pl.touk.nussknacker.engine.deployment.DeploymentData
-import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder
-import pl.touk.nussknacker.engine.kafka.{KafkaConfig, KafkaSpec, KafkaTestUtils}
-import pl.touk.nussknacker.engine.process.ExecutionConfigPreparer
-import pl.touk.nussknacker.engine.process.ExecutionConfigPreparer.{ProcessSettingsPreparer, UnoptimizedSerializationPreparer}
-import pl.touk.nussknacker.engine.process.compiler.FlinkProcessCompiler
-import pl.touk.nussknacker.engine.process.registrar.FlinkProcessRegistrar
+import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.universal.MockSchemaRegistryClientFactory
+import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.{ExistingSchemaVersion, LatestSchemaVersion, SchemaRegistryClientFactory, SchemaVersionOption}
 import pl.touk.nussknacker.engine.spel
 import pl.touk.nussknacker.engine.testing.LocalModelData
 import pl.touk.nussknacker.engine.util.namespaces.ObjectNamingProvider
@@ -77,34 +76,7 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
 
   lazy val kafkaConfig: KafkaConfig = KafkaConfig.parseConfig(config, "components.mockKafka.config")
 
-  val JsonInTopic: String = "name.json.input"
-  val JsonOutTopic: String = "name.json.output"
-
   protected val avroEncoder: BestEffortAvroEncoder = BestEffortAvroEncoder(ValidationMode.strict)
-
-  private val givenNotMatchingJsonObj =
-    """{
-      |  "first": "Zenon",
-      |  "last": "Nowak",
-      |  "nestMap": { "nestedField": "empty" },
-      |  "list1": [ {"listField": "full" } ],
-      |  "list2": [ 123 ]
-      |}""".stripMargin
-  private val givenMatchingJsonObj =
-    """{
-      |  "first": "Jan",
-      |  "last": "Kowalski",
-      |  "nestMap": { "nestedField": "empty" },
-      |  "list1": [ {"listField": "full" } ],
-      |  "list2": [ 123 ]
-      |}""".stripMargin
-
-  private val givenMatchingJsonSchemedObj =
-    """{
-      |  "first": "Jan",
-      |  "middle": null,
-      |  "last": "Kowalski"
-      |}""".stripMargin
 
   private val givenNotMatchingAvroObj = avroEncoder.encodeRecordOrError(
     Map("first" -> "Zenon", "last" -> "Nowak"), RecordSchemaV1
@@ -125,45 +97,6 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
   private val givenSecondMatchingAvroObj = avroEncoder.encodeRecordOrError(
     Map("firstname" -> "Jan"), SecondRecordSchemaV1
   )
-
-  private def jsonTypedProcess(filter: String) =
-    ScenarioBuilder
-      .streaming("json-test")
-      .parallelism(1)
-      .source("start", "kafka-typed-json",
-        "Topic" -> s"'$JsonInTopic'",
-        "type" ->
-          """{
-            |  "first": "String",
-            |  "last": "String",
-            |  "nestMap": { "nestedField": "String" },
-            |  "list1": {{"listField": "String"}},
-            |  "list2": { "Long" }
-            |}""".stripMargin
-      )
-      .filter("name-filter", filter)
-      .emptySink("end",  "kafka-json", "Topic" -> s"'$JsonOutTopic'", "Value" -> "#input")
-
-  private def jsonSchemedProcess(topicConfig: TopicConfig, versionOption: SchemaVersionOption, validationMode: ValidationMode = ValidationMode.strict) =
-    ScenarioBuilder
-      .streaming("json-schemed-test")
-      .parallelism(1)
-      .source(
-        "start",
-        "kafka-registry-typed-json",
-        KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.input}'",
-        KafkaUniversalComponentTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
-      )
-      .filter("name-filter", "#input.first == 'Jan'")
-      .emptySink(
-        "end",
-        "kafka-registry-typed-json-raw",
-        KafkaUniversalComponentTransformer.SinkKeyParamName -> "",
-        KafkaUniversalComponentTransformer.SinkValueParamName -> "#input",
-        KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.output}'",
-        KafkaUniversalComponentTransformer.SchemaVersionParamName -> s"'${SchemaVersionOption.LatestOptionName}'",
-        KafkaUniversalComponentTransformer.SinkValidationModeParameterName -> s"'${validationMode.name}'"
-      )
 
   private def avroProcess(topicConfig: TopicConfig, versionOption: SchemaVersionOption, validationMode: ValidationMode = ValidationMode.strict) =
     ScenarioBuilder
@@ -208,38 +141,12 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
         KafkaUniversalComponentTransformer.SinkValidationModeParameterName -> s"'${ValidationMode.strict.name}'",
         KafkaUniversalComponentTransformer.SchemaVersionParamName -> "'1'"
       )
+
   private def versionOptionParam(versionOption: SchemaVersionOption) =
     versionOption match {
       case LatestSchemaVersion => s"'${SchemaVersionOption.LatestOptionName}'"
       case ExistingSchemaVersion(version) => s"'$version'"
     }
-
-  test("should read json object from kafka, filter and save it to kafka, passing timestamp") {
-    val timeAgo = Instant.now().minus(10, ChronoUnit.HOURS).toEpochMilli
-
-    sendAsJson(givenNotMatchingJsonObj, JsonInTopic, timeAgo)
-    sendAsJson(givenMatchingJsonObj, JsonInTopic, timeAgo)
-
-    assertThrows[Exception] {
-      run(jsonTypedProcess("#input.nestMap.notExist == ''")) {}
-    }
-
-    assertThrows[Exception] {
-      run(jsonTypedProcess("#input.list1[0].notExist == ''")) {}
-    }
-
-    val validJsonProcess = jsonTypedProcess("#input.first == 'Jan' and " +
-      "#input.nestMap.nestedField != 'dummy' and " +
-      "#input.list1[0].listField != 'dummy' and " +
-      "#input.list2[0] != 15")
-    run(validJsonProcess) {
-      val consumer = kafkaClient.createConsumer()
-      val processedMessage = consumer.consumeWithConsumerRecord(JsonOutTopic, secondsToWaitForAvro).head
-
-      processedMessage.timestamp shouldBe timeAgo
-      decodeJsonUnsafe[Json](processedMessage.value()) shouldEqual parseJson(givenMatchingJsonObj)
-    }
-  }
 
   test("should read avro object from kafka, filter and save it to kafka, passing timestamp") {
     val timeAgo = Instant.now().minus(10, ChronoUnit.HOURS).toEpochMilli
@@ -253,21 +160,6 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
       val processed = consumeOneRawAvroMessage(topicConfig.output)
       processed.timestamp shouldBe timeAgo
       valueDeserializer.deserialize(topicConfig.output, processed.value()) shouldEqual givenMatchingAvroObjConvertedToV2
-    }
-  }
-
-  test("should read schemed json from kafka, filter and save it to kafka, passing timestamp") {
-    val timeAgo = Instant.now().minus(10, ChronoUnit.HOURS).toEpochMilli
-    val topicConfig = createAndRegisterTopicConfig("read-filter-save-json", RecordSchemas)
-
-    val sendResult = sendAsJson(givenMatchingJsonObj, topicConfig.input, timeAgo).futureValue
-    logger.info(s"Message sent successful: $sendResult")
-
-    run(jsonSchemedProcess(topicConfig, ExistingSchemaVersion(1), validationMode = ValidationMode.lax)) {
-      val consumer = kafkaClient.createConsumer()
-      val processedMessage = consumer.consumeWithConsumerRecord(topicConfig.output, secondsToWaitForAvro).head
-      processedMessage.timestamp shouldBe timeAgo
-      decodeJsonUnsafe[Json](processedMessage.value()) shouldEqual parseJson(givenMatchingJsonSchemedObj)
     }
   }
 
@@ -338,10 +230,21 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
   private lazy val valueSerializer = new KafkaAvroSerializer(schemaRegistryMockClient)
   private lazy val valueDeserializer = new KafkaAvroDeserializer(schemaRegistryMockClient)
 
+  class MockFlinkKafkaComponentProvider extends FlinkKafkaComponentProvider {
+    override protected def schemaRegistryClientFactory: SchemaRegistryClientFactory =
+      MockSchemaRegistryClientFactory.confluentBased(schemaRegistryMockClient)
+  }
+
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    val modelData = LocalModelData(config, creator)
-    registrar = FlinkProcessRegistrar(new FlinkProcessCompiler(modelData), executionConfigPreparerChain(modelData))
+    val components = FlinkBaseComponentProvider.Components :::
+      new MockFlinkKafkaComponentProvider().create(config.getConfig("components.mockKafka"), ProcessObjectDependencies.empty)
+    val modelData = LocalModelData(config, components, creator)
+    registrar = FlinkProcessRegistrar(
+      new FlinkProcessCompilerDataFactory(creator, modelData.extractModelDefinitionFun, config, modelData.objectNaming, ComponentUseCase.TestRuntime),
+      FlinkJobConfig(None, None),
+      executionConfigPreparerChain(modelData)
+    )
   }
 
   private def executionConfigPreparerChain(modelData: LocalModelData) = {

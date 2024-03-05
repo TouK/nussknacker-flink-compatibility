@@ -18,7 +18,7 @@ val kafkaV = "3.3.1"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val defaultNussknackerV = "1.12.6"
+val defaultNussknackerV = "1.13.0"
 
 val nussknackerV = {
   val v = sys.env
@@ -102,6 +102,7 @@ lazy val commonTest = (project in file("commonTest"))
       ),
       "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
       "pl.touk.nussknacker" %% "nussknacker-flink-kafka-components" % nussknackerV,
+      "pl.touk.nussknacker" %% "nussknacker-flink-base-components" % nussknackerV,
       "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % sttpV,
     ),
     dependencyOverrides ++= Seq(
