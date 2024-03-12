@@ -34,7 +34,6 @@ import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.universal.MockSche
 import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.{ExistingSchemaVersion, LatestSchemaVersion, SchemaRegistryClientFactory, SchemaVersionOption}
 import pl.touk.nussknacker.engine.spel
 import pl.touk.nussknacker.engine.testing.LocalModelData
-import pl.touk.nussknacker.engine.util.namespaces.ObjectNamingProvider
 
 import java.nio.charset.StandardCharsets
 import java.time.Instant
@@ -71,8 +70,6 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
     .withValue("rocksDB.checkpointDataUri", fromAnyRef("file:///tmp/rocksDBCheckpointDataUri"))
 
   private val secondsToWaitForAvro = 30
-
-  lazy val mockProcessObjectDependencies: ProcessObjectDependencies = ProcessObjectDependencies(config, ObjectNamingProvider(getClass.getClassLoader))
 
   lazy val kafkaConfig: KafkaConfig = KafkaConfig.parseConfig(config, "components.mockKafka.config")
 
@@ -238,10 +235,19 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     val components = FlinkBaseComponentProvider.Components :::
-      new MockFlinkKafkaComponentProvider().create(config.getConfig("components.mockKafka"), ProcessObjectDependencies.empty)
+      new MockFlinkKafkaComponentProvider().create(
+        config.getConfig("components.mockKafka"),
+        ProcessObjectDependencies.withConfig(ConfigFactory.empty())
+      )
     val modelData = LocalModelData(config, components, creator)
     registrar = FlinkProcessRegistrar(
-      new FlinkProcessCompilerDataFactory(creator, modelData.extractModelDefinitionFun, config, modelData.objectNaming, ComponentUseCase.TestRuntime),
+      new FlinkProcessCompilerDataFactory(
+        creator,
+        modelData.extractModelDefinitionFun,
+        config,
+        modelData.namingStrategy,
+        ComponentUseCase.TestRuntime
+      ),
       FlinkJobConfig(None, None),
       executionConfigPreparerChain(modelData)
     )
@@ -262,7 +268,7 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
   private def run(process: CanonicalProcess)(action: => Unit): Unit = {
     val env = flinkMiniCluster.createExecutionEnvironment()
     registrar.register(env, process, ProcessVersion.empty, DeploymentData.empty)
-    env.withJobRunning(process.id)(action)
+    env.withJobRunning(process.name.value)(action)
   }
 
   protected def sendAvro(obj: Any, topic: String, timestamp: java.lang.Long = null): Future[RecordMetadata] = {

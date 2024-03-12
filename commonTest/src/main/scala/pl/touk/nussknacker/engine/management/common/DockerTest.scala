@@ -105,6 +105,7 @@ trait DockerTest extends DockerTestKit with ScalaFutures with Eventually with La
   def config: ConfigWithUnresolvedVersion = ConfigWithUnresolvedVersion(ConfigFactory.load()
     .withValue("deploymentConfig.restUrl", fromAnyRef(s"http://${jobManagerContainer.getIpAddresses().futureValue.head}:$FlinkJobManagerRestPort"))
     .withValue("modelConfig.classPath", ConfigValueFactory.fromIterable(Collections.singletonList(classPath)))
+    .withValue("category", fromAnyRef("Category1"))
     .withFallback(additionalConfig))
 
   def processingTypeConfig: ProcessingTypeConfig = ProcessingTypeConfig.read(config)
