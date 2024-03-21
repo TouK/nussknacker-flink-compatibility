@@ -56,6 +56,7 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
   import KafkaTestUtils._
   import MockSchemaRegistry._
   import spel.Implicits._
+  import KafkaUniversalComponentTransformer._
 
   override lazy val config: Config = ConfigFactory.load()
     .withValue("components.mockKafka.config.kafkaAddress", fromAnyRef(kafkaServer.kafkaAddress))
@@ -102,20 +103,19 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
       .source(
         "start",
         "kafka",
-        KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.input}'",
-        KafkaUniversalComponentTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
+        topicParamName.value -> s"'${topicConfig.input}'",
+        schemaVersionParamName.value -> versionOptionParam(versionOption)
       )
       .filter("name-filter", "#input.first == 'Jan'")
       .emptySink(
         "end",
         "kafka",
-        KafkaUniversalComponentTransformer.SinkKeyParamName -> "",
-        KafkaUniversalComponentTransformer.SinkRawEditorParamName -> "true",
-        KafkaUniversalComponentTransformer.SinkValueParamName -> "#input",
-        KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.output}'",
-        KafkaUniversalComponentTransformer.SchemaVersionParamName -> s"'${SchemaVersionOption.LatestOptionName}'",
-        KafkaUniversalComponentTransformer.SinkValidationModeParameterName -> s"'${validationMode.name}'"
-
+        sinkKeyParamName.value -> "",
+        sinkRawEditorParamName.value -> "true",
+        sinkValueParamName.value -> "#input",
+        topicParamName.value -> s"'${topicConfig.output}'",
+        schemaVersionParamName.value -> s"'${SchemaVersionOption.LatestOptionName}'",
+        sinkValidationModeParamName.value -> s"'${validationMode.name}'"
       )
 
   private def avroFromScratchProcess(topicConfig: TopicConfig, versionOption: SchemaVersionOption) =
@@ -125,18 +125,18 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
       .source(
         "start",
         "kafka",
-        KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.input}'",
-        KafkaUniversalComponentTransformer.SchemaVersionParamName -> versionOptionParam(versionOption)
+        topicParamName.value -> s"'${topicConfig.input}'",
+        schemaVersionParamName.value -> versionOptionParam(versionOption)
       )
       .emptySink(
         "end",
         "kafka",
-        KafkaUniversalComponentTransformer.SinkKeyParamName -> "",
-        KafkaUniversalComponentTransformer.SinkRawEditorParamName -> "true",
-        KafkaUniversalComponentTransformer.SinkValueParamName -> s"{first: #input.first, last: #input.last}",
-        KafkaUniversalComponentTransformer.TopicParamName -> s"'${topicConfig.output}'",
-        KafkaUniversalComponentTransformer.SinkValidationModeParameterName -> s"'${ValidationMode.strict.name}'",
-        KafkaUniversalComponentTransformer.SchemaVersionParamName -> "'1'"
+        sinkKeyParamName.value -> "",
+        sinkRawEditorParamName.value -> "true",
+        sinkValueParamName.value -> s"{first: #input.first, last: #input.last}",
+        topicParamName.value -> s"'${topicConfig.output}'",
+        sinkValidationModeParamName.value -> s"'${ValidationMode.strict.name}'",
+        schemaVersionParamName.value -> "'1'"
       )
 
   private def versionOptionParam(versionOption: SchemaVersionOption) =

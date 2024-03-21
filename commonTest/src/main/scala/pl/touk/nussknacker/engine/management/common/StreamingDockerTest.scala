@@ -42,10 +42,10 @@ trait StreamingDockerTest extends DockerTest with Matchers {
     val typeConfig = ProcessingTypeConfig.read(config)
     val modelDependencies: ModelDependencies = {
       ModelDependencies(
-        Map(),
-        componentId => DesignerWideComponentId(componentId.toString),
+        additionalConfigsFromProvider = Map.empty,
+        determineDesignerWideId = componentId => DesignerWideComponentId(componentId.toString),
         workingDirectoryOpt = None,
-        _ => true
+        shouldIncludeComponentProvider = _ => true
       )
     }
     val deploymentManagerDependencies = DeploymentManagerDependencies(
@@ -68,7 +68,7 @@ trait StreamingDockerTest extends DockerTest with Matchers {
 
     eventually {
       val jobStatus = deploymentManager.getProcessStates(process.name).futureValue
-      logger.info(s"Waiting for deploy: ${process.name.value}, $jobStatus")
+      logger.info(s"Waiting for deploy: ${process.name}, $jobStatus")
 
       jobStatus.value.map(_.status.name) shouldBe List(SimpleStateStatus.Running.name)
     }
