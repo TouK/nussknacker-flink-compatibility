@@ -25,6 +25,7 @@ import pl.touk.nussknacker.engine.flink.util.source.CollectionSource
 import pl.touk.nussknacker.engine.process.{ExecutionConfigPreparer, FlinkJobConfig}
 import pl.touk.nussknacker.engine.process.compiler.FlinkProcessCompilerDataFactory
 import pl.touk.nussknacker.engine.process.helpers.SampleNodes.SinkForLongs
+import pl.touk.nussknacker.engine.process.helpers.TestResultsHolder
 import pl.touk.nussknacker.engine.process.registrar.FlinkProcessRegistrar
 import pl.touk.nussknacker.engine.testing.LocalModelData
 import pl.touk.nussknacker.engine.{api, spel}
@@ -33,19 +34,19 @@ import pl.touk.nussknacker.test.VeryPatientScalaFutures
 //This test checks if handling of setTimeCharacteristic based of TimestampAssigner presence works well after removal from Nussknacker
 trait BaseTimestampTest extends AnyFunSuiteLike with BeforeAndAfterAll with BeforeAndAfter with Matchers with VeryPatientScalaFutures with LazyLogging {
 
+  protected val sinkForLongsResultsHolder: () => TestResultsHolder[java.lang.Long]
   protected def flinkMiniCluster: FlinkMiniClusterHolder
 
   before {
-    SinkForLongs.clear()
+    sinkForLongsResultsHolder().clear()
   }
 
   test("should handle event time") {
-
     val customFixedTime = System.currentTimeMillis() + 1000000
 
     runWithAssigner(Some(new LegacyTimestampWatermarkHandler[String](new FixedWatermarks(customFixedTime))))
 
-    SinkForLongs.data shouldBe List(customFixedTime + CheckTimeTransformer.timeToAdd)
+    sinkForLongsResultsHolder().results shouldBe List(customFixedTime + CheckTimeTransformer.timeToAdd)
   }
 
   protected def runWithAssigner(assigner: Option[TimestampWatermarkHandler[String]]): JobExecutionResult = {
@@ -56,15 +57,14 @@ trait BaseTimestampTest extends AnyFunSuiteLike with BeforeAndAfterAll with Befo
       .customNode("custom", "output", "check")
       .emptySink("log", "log", "Value" -> "#output")
 
-    val creator = new TestCreator(assigner)
+    val creator = new TestCreator(assigner, sinkForLongsResultsHolder())
 
     val modelData = LocalModelData(prepareConfig, Nil, creator)
     val env = flinkMiniCluster.createExecutionEnvironment()
-    val registrar = FlinkProcessRegistrar(new FlinkProcessCompilerDataFactory(creator, modelData.extractModelDefinitionFun, prepareConfig, modelData.objectNaming, ComponentUseCase.TestRuntime),
+    val registrar = FlinkProcessRegistrar(new FlinkProcessCompilerDataFactory(creator, modelData.extractModelDefinitionFun, prepareConfig, modelData.namingStrategy, ComponentUseCase.TestRuntime),
       FlinkJobConfig(None, None), ExecutionConfigPreparer.unOptimizedChain(modelData))
     registrar.register(env, process, ProcessVersion.empty, DeploymentData.empty)
-    env.executeAndWaitForFinished(process.id)()
-
+    env.executeAndWaitForFinished(process.name.value)()
   }
 
   private def prepareConfig = {
@@ -81,10 +81,11 @@ class FixedWatermarks(customFixedTime: Long) extends AssignerWithPunctuatedWater
   override def extractTimestamp(element: String, recordTimestamp: Long): Long = customFixedTime
 }
 
-class TestCreator(assigner: Option[TimestampWatermarkHandler[String]]) extends EmptyProcessConfigCreator {
+class TestCreator(assigner: Option[TimestampWatermarkHandler[String]],
+                  sinkForLongsResultsHolder: => TestResultsHolder[java.lang.Long]) extends EmptyProcessConfigCreator {
 
   override def sourceFactories(processObjectDependencies: ProcessObjectDependencies): Map[String, WithCategories[SourceFactory]] = {
-    Map("source" -> WithCategories.anyCategory(SourceFactory.noParam[String](
+    Map("source" -> WithCategories.anyCategory(SourceFactory.noParamUnboundedStreamFactory[String](
       new CollectionSource[String](List(""), assigner, Typed[String]))))
   }
 
@@ -94,7 +95,7 @@ class TestCreator(assigner: Option[TimestampWatermarkHandler[String]]) extends E
   }
 
   override def sinkFactories(processObjectDependencies: ProcessObjectDependencies): Map[String, WithCategories[SinkFactory]] = {
-    Map("log" -> WithCategories.anyCategory(SinkForLongs.toSinkFactory))
+    Map("log" -> WithCategories.anyCategory(SinkForLongs(sinkForLongsResultsHolder)))
   }
 }
 
