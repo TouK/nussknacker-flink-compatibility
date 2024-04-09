@@ -1,45 +1,73 @@
 package pl.touk.nussknacker.engine.management.common
 
 import akka.actor.ActorSystem
-import com.whisk.docker.DockerContainer
+import com.dimafeng.testcontainers.lifecycle.and
+import com.dimafeng.testcontainers.scalatest.TestContainersForAll
+import com.typesafe.config.ConfigValueFactory.fromAnyRef
+import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
+import com.typesafe.scalalogging.LazyLogging
 import org.asynchttpclient.DefaultAsyncHttpClientConfig
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.{Millis, Minutes, Span}
 import org.scalatest.{Assertion, Suite}
+import org.testcontainers.containers.Network
+import pl.touk.nussknacker.engine._
 import pl.touk.nussknacker.engine.api.ProcessVersion
 import pl.touk.nussknacker.engine.api.component.DesignerWideComponentId
 import pl.touk.nussknacker.engine.api.deployment.simple.SimpleStateStatus
 import pl.touk.nussknacker.engine.api.deployment.{DataFreshnessPolicy, DeploymentManager, ProcessingTypeDeploymentServiceStub}
 import pl.touk.nussknacker.engine.api.process.ProcessName
 import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
-import pl.touk.nussknacker.engine.deployment.DeploymentData
+import pl.touk.nussknacker.engine.deployment.{DeploymentData, User}
 import pl.touk.nussknacker.engine.management.FlinkStreamingDeploymentManagerProvider
-import pl.touk.nussknacker.engine.{DeploymentManagerDependencies, ModelData, ModelDependencies, ProcessingTypeConfig}
 import sttp.client3.SttpBackend
 import sttp.client3.asynchttpclient.future.AsyncHttpClientFutureBackend
 
+import java.net.URL
+import java.nio.file.attribute.{PosixFilePermission, PosixFilePermissions}
+import java.nio.file.{Files, Path}
+import java.util.Collections
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-trait StreamingDockerTest extends DockerTest with Matchers {
+trait StreamingDockerTest extends TestContainersForAll
+  with Matchers
+  with ScalaFutures
+  with Eventually
+  with LazyLogging {
   self: Suite =>
+
+  override type Containers = JobManagerContainer and TaskManagerContainer
+
+  private val userToAct: User = User("testUser", "Test User")
+
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(2, Minutes)), interval = scaled(Span(100, Millis)))
 
   protected def deploymentManagerProvider: FlinkStreamingDeploymentManagerProvider
 
-  lazy val taskManagerContainer: DockerContainer = buildTaskManagerContainer()
   private val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
   private val backend: SttpBackend[Future, Any] =
     AsyncHttpClientFutureBackend.usingConfig(new DefaultAsyncHttpClientConfig.Builder().build())
 
-  abstract override def dockerContainers: List[DockerContainer] = {
-    List(
-      zookeeperContainer,
-      jobManagerContainer,
-      taskManagerContainer
-    ) ++ super.dockerContainers
+
+  override def startContainers(): Containers = {
+    val network = Network.newNetwork()
+    val volumeDir = prepareVolumeDir()
+    val jobmanager: JobManagerContainer = JobManagerContainer.Def(volumeDir, network).start()
+    val jobmanagerHostName = jobmanager.container.getContainerInfo.getConfig.getHostName
+    val taskmanager: TaskManagerContainer = TaskManagerContainer.Def(network, jobmanagerHostName).start()
+    jobmanager and taskmanager
   }
 
-  protected lazy val deploymentManager: DeploymentManager = {
-    val typeConfig = ProcessingTypeConfig.read(config)
+  private def prepareVolumeDir(): Path = {
+    import scala.collection.JavaConverters._
+    Files.createTempDirectory("dockerTest",
+      PosixFilePermissions.asFileAttribute(PosixFilePermission.values().toSet[PosixFilePermission].asJava))
+  }
+
+  protected def createDeploymentManager(jobmanagerRestUrl: URL): DeploymentManager = {
+    val typeConfig = ProcessingTypeConfig.read(config(jobmanagerRestUrl))
     val modelDependencies: ModelDependencies = {
       ModelDependencies(
         additionalConfigsFromProvider = Map.empty,
@@ -55,16 +83,16 @@ trait StreamingDockerTest extends DockerTest with Matchers {
       backend
     )
     deploymentManagerProvider.createDeploymentManager(
-        ModelData(typeConfig, modelDependencies),
-        deploymentManagerDependencies,
-        typeConfig.deploymentConfig,
-        None
-      ).valueOr(err => throw new IllegalStateException(s"Invalid Deployment Manager: ${err.toList.mkString(", ")}"))
+      ModelData(typeConfig, modelDependencies),
+      deploymentManagerDependencies,
+      typeConfig.deploymentConfig,
+      None
+    ).valueOr(err => throw new IllegalStateException(s"Invalid Deployment Manager: ${err.toList.mkString(", ")}"))
   }
 
-  protected def deployProcessAndWaitIfRunning(process: CanonicalProcess, processVersion: ProcessVersion, savepointPath: Option[String] = None): Assertion = {
+  protected def deployProcessAndWaitIfRunning(process: CanonicalProcess, processVersion: ProcessVersion, savepointPath: Option[String] = None, deploymentManager: DeploymentManager): Assertion = {
     implicit val freshnessPolicy: DataFreshnessPolicy = DataFreshnessPolicy.Fresh
-    deployProcess(process, processVersion, savepointPath)
+    deployProcess(process, processVersion, savepointPath, deploymentManager)
 
     eventually {
       val jobStatus = deploymentManager.getProcessStates(process.name).futureValue
@@ -74,11 +102,11 @@ trait StreamingDockerTest extends DockerTest with Matchers {
     }
   }
 
-  protected def deployProcess(process: CanonicalProcess, processVersion: ProcessVersion, savepointPath: Option[String] = None): Assertion = {
+  private def deployProcess(process: CanonicalProcess, processVersion: ProcessVersion, savepointPath: Option[String] = None, deploymentManager: DeploymentManager): Assertion = {
     assert(deploymentManager.deploy(processVersion, DeploymentData.empty, process, savepointPath).isReadyWithin(100 seconds))
   }
 
-  protected def cancelProcess(processId: String): Unit = {
+  protected def cancelProcess(processId: String, deploymentManager: DeploymentManager): Unit = {
     implicit val freshnessPolicy: DataFreshnessPolicy = DataFreshnessPolicy.Fresh
     assert(deploymentManager.cancel(ProcessName(processId), user = userToAct).isReadyWithin(10 seconds))
     eventually {
@@ -95,5 +123,12 @@ trait StreamingDockerTest extends DockerTest with Matchers {
       }
     }
   }
+
+  protected def classPath: String
+
+  private def config(jobManagerRestUrl: URL): ConfigWithUnresolvedVersion = ConfigWithUnresolvedVersion(ConfigFactory.load()
+    .withValue("deploymentConfig.restUrl", fromAnyRef(jobManagerRestUrl.toExternalForm))
+    .withValue("modelConfig.classPath", ConfigValueFactory.fromIterable(Collections.singletonList(classPath)))
+    .withValue("category", fromAnyRef("Category1")))
 
 }

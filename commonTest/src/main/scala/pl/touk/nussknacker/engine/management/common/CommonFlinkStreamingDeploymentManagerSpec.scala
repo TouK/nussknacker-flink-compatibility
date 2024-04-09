@@ -1,29 +1,34 @@
 package pl.touk.nussknacker.engine.management.common
 
+import com.dimafeng.testcontainers.lifecycle.and
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 import pl.touk.nussknacker.engine.api.ProcessVersion
-import pl.touk.nussknacker.engine.api.deployment.DataFreshnessPolicy
+import pl.touk.nussknacker.engine.api.deployment.{DataFreshnessPolicy, DeploymentManager}
 import pl.touk.nussknacker.engine.api.process.{ProcessId, ProcessName, VersionId}
 import pl.touk.nussknacker.engine.build.ScenarioBuilder
 import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
 import pl.touk.nussknacker.engine.spel.Implicits._
 
+
 trait CommonFlinkStreamingDeploymentManagerSpec extends AnyFunSuite with Matchers with StreamingDockerTest {
   test("deploy scenario in running flink") {
-    val processId = "runningFlink"
+    withContainers { case jobManager and _ =>
+      val deploymentManager = createDeploymentManager(jobManager.jobmanagerRestUrl)
+      val processId = "runningFlink"
 
-    val version = ProcessVersion(VersionId(15), ProcessName(processId), ProcessId(1), "user1", Some(13))
-    val process = prepareProcess(processId, Some(1))
+      val version = ProcessVersion(VersionId(15), ProcessName(processId), ProcessId(1), "user1", Some(13))
+      val process = prepareProcess(processId, Some(1))
 
-    deployProcessAndWaitIfRunning(process, version)
+      deployProcessAndWaitIfRunning(process, version, None, deploymentManager)
 
-    processVersions(ProcessName(processId)) shouldBe List(version)
+      processVersions(ProcessName(processId), deploymentManager) shouldBe List(version)
 
-    cancelProcess(processId)
+      cancelProcess(processId, deploymentManager)
+    }
   }
 
-  def prepareProcess(id: String, parallelism: Option[Int] = None) : CanonicalProcess = {
+  private def prepareProcess(id: String, parallelism: Option[Int] = None): CanonicalProcess = {
     val baseProcessBuilder = ScenarioBuilder.streaming(id)
     parallelism.map(baseProcessBuilder.parallelism).getOrElse(baseProcessBuilder)
       .source("startProcess", "periodic",
@@ -34,7 +39,7 @@ trait CommonFlinkStreamingDeploymentManagerSpec extends AnyFunSuite with Matcher
       .emptySink("dead-end", "dead-end")
   }
 
-  private def processVersions(processId: ProcessName): List[ProcessVersion] = {
+  private def processVersions(processId: ProcessName, deploymentManager: DeploymentManager): List[ProcessVersion] = {
     implicit val freshnessPolicy: DataFreshnessPolicy = DataFreshnessPolicy.Fresh
     deploymentManager.getProcessStates(processId).futureValue.value.flatMap(_.version)
   }
