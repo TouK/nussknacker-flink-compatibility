@@ -15,6 +15,7 @@ val flink114V = "1.14.5"
 val currentFlinkV = "1.16.0"
 val sttpV = "3.8.11"
 val kafkaV = "3.3.1"
+val testContainersScalaV = "0.41.0"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
@@ -95,8 +96,7 @@ lazy val commonTest = (project in file("commonTest"))
       ),
       "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV,
       "org.apache.flink" %% "flink-streaming-scala" % currentFlinkV % "provided",
-      "com.whisk" %% "docker-testkit-scalatest" % "0.9.0",
-      "com.whisk" %% "docker-testkit-impl-spotify" % "0.9.0",
+      "com.dimafeng" %% "testcontainers-scala-scalatest" % testContainersScalaV,
       "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV excludeAll (
         ExclusionRule("org.apache.flink", "flink-scala_2.12"),
       ),
@@ -181,8 +181,7 @@ def managerDeps(version: String) = Seq(
     ExclusionRule("log4j", "log4j"),
     ExclusionRule("org.slf4j", "slf4j-log4j12"),
   ),
-  "com.whisk" %% "docker-testkit-scalatest" % "0.9.0" % "it,test",
-  "com.whisk" %% "docker-testkit-impl-spotify" % "0.9.0" % "it,test",
+  "com.dimafeng" %% "testcontainers-scala-scalatest" % testContainersScalaV % "it,test",
   "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % sttpV,
 )
 
