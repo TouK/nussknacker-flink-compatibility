@@ -18,9 +18,6 @@
 
     <!-- we are declaring here loggers for libs that not in dependency of this module, but we are doing it for simplicity of logging configurations -->
     <!-- levels below can be sometimes duplicated in root level but let's keep them just in case if we want to change value for root logger -->
-    <logger name="org.apache.zookeeper.server.PrepRequestProcessor" level="WARN"/>
-    <logger name="com.spotify.docker.client.LoggingPullHandler" level="WARN"/>
-    <logger name="com.spotify.docker.client.LoggingBuildHandler" level="WARN"/>
     <logger name="org.apache.flink.runtime.leaderretrieval.ZooKeeperLeaderRetrievalService" level="WARN"/>
     <logger name="org.apache.flink" level="WARN"/>
 
