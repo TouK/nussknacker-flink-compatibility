@@ -40,6 +40,8 @@ trait StreamingDockerTest extends TestContainersForAll
 
   override type Containers = JobManagerContainer and TaskManagerContainer
 
+  protected val flinkVersion: String
+
   private val userToAct: User = User("testUser", "Test User")
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(2, Minutes)), interval = scaled(Span(100, Millis)))
@@ -54,9 +56,9 @@ trait StreamingDockerTest extends TestContainersForAll
   override def startContainers(): Containers = {
     val network = Network.newNetwork()
     val volumeDir = prepareVolumeDir()
-    val jobmanager: JobManagerContainer = JobManagerContainer.Def(volumeDir, network).start()
+    val jobmanager: JobManagerContainer = JobManagerContainer.Def(flinkVersion, volumeDir, network).start()
     val jobmanagerHostName = jobmanager.container.getContainerInfo.getConfig.getHostName
-    val taskmanager: TaskManagerContainer = TaskManagerContainer.Def(network, jobmanagerHostName).start()
+    val taskmanager: TaskManagerContainer = TaskManagerContainer.Def(flinkVersion, network, jobmanagerHostName).start()
     jobmanager and taskmanager
   }
 

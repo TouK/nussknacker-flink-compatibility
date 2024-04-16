@@ -10,4 +10,6 @@ class Flink114StreamingDeploymentManagerSpec extends CommonFlinkStreamingDeploym
 
   override protected def deploymentManagerProvider: FlinkStreamingDeploymentManagerProvider =
     new FlinkStreamingDeploymentManagerProvider()
+
+  override protected val flinkVersion: String = "1.14.5"
 }
