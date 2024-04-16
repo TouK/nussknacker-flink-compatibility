@@ -4,9 +4,9 @@ import pl.touk.nussknacker.engine.management.FlinkStreamingDeploymentManagerProv
 import pl.touk.nussknacker.engine.management.common.CommonFlinkStreamingDeploymentManagerSpec
 import pl.touk.nussknacker.engine.util.config.ScalaMajorVersionConfig
 
-class FlinkStreamingDeploymentManagerSpec extends CommonFlinkStreamingDeploymentManagerSpec {
+class Flink116StreamingDeploymentManagerSpec extends CommonFlinkStreamingDeploymentManagerSpec {
   override protected def classPath: String =
-    s"./flink114/model/target/scala-${ScalaMajorVersionConfig.scalaMajorVersion}/flink114-model-assembly.jar"
+    s"./flink116/model/target/scala-${ScalaMajorVersionConfig.scalaMajorVersion}/flink116-model-assembly.jar"
 
   override protected def deploymentManagerProvider: FlinkStreamingDeploymentManagerProvider =
     new FlinkStreamingDeploymentManagerProvider()

@@ -12,14 +12,15 @@ val silencerV_2_12 = "1.6.0"
 val silencerV = "1.7.0"
 
 val flink114V = "1.14.5"
-val currentFlinkV = "1.16.0"
+val flink116V = "1.16.0"
+val currentFlinkV = "1.18.1"
 val sttpV = "3.8.11"
 val kafkaV = "3.3.1"
 val testContainersScalaV = "0.41.0"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val defaultNussknackerV = "1.14.0"
+val defaultNussknackerV = "1.15.0-staging-2024-04-04-17639-3e42b8064-SNAPSHOT"
 
 val nussknackerV = {
   val v = sys.env
@@ -145,6 +146,38 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager"))
   )
   .dependsOn(commonTest % "test,it")
 
+lazy val flink116ModelCompat = (project in file("flink116/model"))
+  .settings(commonSettings(scala212V))
+  .settings(
+    name := "flink116-model",
+    libraryDependencies ++= deps(flink116V),
+    dependencyOverrides ++= Seq(
+      "org.apache.kafka" % "kafka-clients" % kafkaV,
+      "org.apache.kafka" %% "kafka" % kafkaV,
+    ),
+  )
+  .dependsOn(commonTest % "test,it")
+
+lazy val flink116ManagerCompat = (project in file("flink116/manager"))
+  .settings(commonSettings(scala212V))
+  .configs(IntegrationTest)
+  .settings(Defaults.itSettings)
+  .settings(
+    name := "flink116-manager",
+    libraryDependencies ++= managerDeps(flink116V),
+    dependencyOverrides ++= Seq(
+      //For some strange reason, docker client libraries have conflict with schema registry client :/
+      "org.glassfish.jersey.core" % "jersey-common" % "2.22.2",
+      // must be the same as used by flink - otherwise it is evicted by version from deployment-manager-api
+      "com.typesafe.akka" %% "akka-actor" % "2.6.20",
+      "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
+    ),
+    IntegrationTest / Keys.test := (IntegrationTest / Keys.test)
+      .dependsOn(flink116ModelCompat / Compile / assembly)
+      .value,
+  )
+  .dependsOn(commonTest % "test,it")
+
 def flinkExclusionsForBefore1_15 = Seq(
   "org.apache.flink" % "flink-streaming-java",
   "org.apache.flink" % "flink-statebackend-rocksdb",
@@ -187,9 +220,10 @@ def managerDeps(version: String) = Seq(
 
 def deps(version: String) = Seq(
   "org.apache.flink" %% "flink-streaming-scala" % version % "provided",
-  "org.apache.flink" %% "flink-statebackend-rocksdb" % version % "provided",
+  "org.apache.flink" % "flink-statebackend-rocksdb" % version % "provided",
   "pl.touk.nussknacker" %% "nussknacker-default-model" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-base-components" % nussknackerV,
+  "pl.touk.nussknacker" %% "nussknacker-flink-base-unbounded-components" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV % "test",
   "org.apache.flink" %% "flink-streaming-scala" % version % "test",
@@ -198,7 +232,7 @@ def deps(version: String) = Seq(
 def flinkOverrides(version: String) = Seq(
   "org.apache.flink" %% "flink-streaming-scala" % version % "provided",
   "org.apache.flink" %% "flink-scala" % version % "provided",
-  "org.apache.flink" %% "flink-statebackend-rocksdb" % version % "provided",
+  "org.apache.flink" % "flink-statebackend-rocksdb" % version % "provided",
   "org.apache.flink" % "flink-avro" % version,
   "org.apache.flink" %% "flink-runtime" % version % "provided",
   "org.apache.flink" %% "flink-connector-kafka" % version % "provided",
