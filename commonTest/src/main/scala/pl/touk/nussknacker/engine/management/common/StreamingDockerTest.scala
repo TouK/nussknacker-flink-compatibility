@@ -15,8 +15,8 @@ import org.testcontainers.containers.Network
 import pl.touk.nussknacker.engine._
 import pl.touk.nussknacker.engine.api.ProcessVersion
 import pl.touk.nussknacker.engine.api.component.DesignerWideComponentId
+import pl.touk.nussknacker.engine.api.deployment._
 import pl.touk.nussknacker.engine.api.deployment.simple.SimpleStateStatus
-import pl.touk.nussknacker.engine.api.deployment.{CancelScenarioCommand, DataFreshnessPolicy, DeploymentManager, ProcessingTypeDeploymentServiceStub, RunDeploymentCommand}
 import pl.touk.nussknacker.engine.api.process.ProcessName
 import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
 import pl.touk.nussknacker.engine.deployment.{DeploymentData, User}
@@ -79,7 +79,8 @@ trait StreamingDockerTest extends TestContainersForAll
       )
     }
     val deploymentManagerDependencies = DeploymentManagerDependencies(
-      new ProcessingTypeDeploymentServiceStub(List.empty),
+      new ProcessingTypeDeployedScenariosProviderStub(List.empty),
+      new ProcessingTypeActionServiceStub(),
       actorSystem.dispatcher,
       actorSystem,
       backend
@@ -105,12 +106,12 @@ trait StreamingDockerTest extends TestContainersForAll
   }
 
   private def deployProcess(process: CanonicalProcess, processVersion: ProcessVersion, savepointPath: Option[String] = None, deploymentManager: DeploymentManager): Assertion = {
-    assert(deploymentManager.processCommand(RunDeploymentCommand(processVersion, DeploymentData.empty, process, savepointPath)).isReadyWithin(100 seconds))
+    assert(deploymentManager.processCommand(DMRunDeploymentCommand(processVersion, DeploymentData.empty, process, savepointPath)).isReadyWithin(100 seconds))
   }
 
   protected def cancelProcess(processId: String, deploymentManager: DeploymentManager): Unit = {
     implicit val freshnessPolicy: DataFreshnessPolicy = DataFreshnessPolicy.Fresh
-    assert(deploymentManager.processCommand(CancelScenarioCommand(ProcessName(processId), user = userToAct)).isReadyWithin(10 seconds))
+    assert(deploymentManager.processCommand(DMCancelScenarioCommand(ProcessName(processId), user = userToAct)).isReadyWithin(10 seconds))
     eventually {
       val runningJobs = deploymentManager
         .getProcessStates(ProcessName(processId))

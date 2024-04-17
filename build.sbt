@@ -20,7 +20,8 @@ val testContainersScalaV = "0.41.0"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-val defaultNussknackerV = "1.15.0-staging-2024-04-04-17639-3e42b8064-SNAPSHOT"
+// todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSTHOT version
+val defaultNussknackerV = "1.15.0-staging-2024-04-16-17902-fee231b4e-SNAPSHOT"
 
 val nussknackerV = {
   val v = sys.env
