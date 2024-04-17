@@ -16,9 +16,10 @@ import java.time.Duration
 
 
 object FlinkContainer {
-  val flinkImage: ImageFromDockerfile = {
+  def flinkImage(flinkVersion: String): ImageFromDockerfile = {
     val dockerfileWithReplacedScalaVersion = IOUtils.toString(getClass.getResourceAsStream("/docker/Dockerfile"), StandardCharsets.UTF_8)
       .replace("${scala.major.version}", ScalaMajorVersionConfig.scalaMajorVersion)
+      .replace("${flink.version}", flinkVersion)
     new ImageFromDockerfile()
       .withFileFromString("Dockerfile", dockerfileWithReplacedScalaVersion)
       .withFileFromClasspath("entrypointWithIP.sh", "docker/entrypointWithIP.sh")
@@ -38,10 +39,10 @@ class JobManagerContainer private(underlying: GenericContainer, network: Network
 object JobManagerContainer {
   val FlinkJobManagerRestPort = 8081
 
-  case class Def(savepointDir: Path, network: Network) extends GenericContainer.Def[JobManagerContainer](
+  case class Def(flinkVersion: String, savepointDir: Path, network: Network) extends GenericContainer.Def[JobManagerContainer](
     new JobManagerContainer(
       GenericContainer(
-        FlinkContainer.flinkImage,
+        FlinkContainer.flinkImage(flinkVersion),
         command = List("jobmanager"),
         env = Map("SAVEPOINT_DIR_NAME" -> savepointDir.getFileName.toString),
         waitStrategy = new LogMessageWaitStrategy().withRegEx(".*Recover all persisted job graphs.*").withStartupTimeout(Duration.ofSeconds(250)),
@@ -60,10 +61,10 @@ class TaskManagerContainer private(underlying: GenericContainer, network: Networ
 object TaskManagerContainer {
   private val TaskManagerSlots = 8
 
-  case class Def(network: Network, jobmanagerRpcAddress: String) extends GenericContainer.Def[TaskManagerContainer](
+  case class Def(flinkVersion: String, network: Network, jobmanagerRpcAddress: String) extends GenericContainer.Def[TaskManagerContainer](
     new TaskManagerContainer(
       GenericContainer(
-        FlinkContainer.flinkImage,
+        FlinkContainer.flinkImage(flinkVersion),
         command = List("taskmanager"),
         env = Map(
           "TASK_MANAGER_NUMBER_OF_TASK_SLOTS" -> TaskManagerSlots.toString,
