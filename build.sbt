@@ -20,8 +20,8 @@ val testContainersScalaV = "0.41.0"
 
 ThisBuild / version := "0.1-SNAPSHOT"
 
-// todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSTHOT version
-val defaultNussknackerV = "1.15.0-staging-2024-04-16-17902-fee231b4e-SNAPSHOT"
+// todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
+val defaultNussknackerV = "1.15.0-RC1"
 
 val nussknackerV = {
   val v = sys.env
@@ -209,7 +209,7 @@ def managerDeps(version: String) = Seq(
     ExclusionRule("org.apache.flink", "flink-scala_2.12"),
   ),
   "pl.touk.nussknacker" %% "nussknacker-http-utils" % nussknackerV % "provided,it,test",
-  "pl.touk.nussknacker" %% "nussknacker-interpreter" % nussknackerV % "provided,it,test",
+  "pl.touk.nussknacker" %% "nussknacker-scenario-compiler" % nussknackerV % "provided,it,test",
   "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
   "org.apache.flink" %% "flink-streaming-scala" % version excludeAll (
     ExclusionRule("log4j", "log4j"),
