@@ -93,9 +93,12 @@ trait StreamingDockerTest extends TestContainersForAll
     ).valueOr(err => throw new IllegalStateException(s"Invalid Deployment Manager: ${err.toList.mkString(", ")}"))
   }
 
-  protected def deployProcessAndWaitIfRunning(process: CanonicalProcess, processVersion: ProcessVersion, savepointPath: Option[String] = None, deploymentManager: DeploymentManager): Assertion = {
+  protected def deployProcessAndWaitIfRunning(process: CanonicalProcess,
+                                              processVersion: ProcessVersion,
+                                              deploymentUpdateStrategy: DeploymentUpdateStrategy,
+                                              deploymentManager: DeploymentManager): Assertion = {
     implicit val freshnessPolicy: DataFreshnessPolicy = DataFreshnessPolicy.Fresh
-    deployProcess(process, processVersion, savepointPath, deploymentManager)
+    deployProcess(process, processVersion, deploymentUpdateStrategy, deploymentManager)
 
     eventually {
       val jobStatus = deploymentManager.getProcessStates(process.name).futureValue
@@ -105,8 +108,15 @@ trait StreamingDockerTest extends TestContainersForAll
     }
   }
 
-  private def deployProcess(process: CanonicalProcess, processVersion: ProcessVersion, savepointPath: Option[String] = None, deploymentManager: DeploymentManager): Assertion = {
-    assert(deploymentManager.processCommand(DMRunDeploymentCommand(processVersion, DeploymentData.empty, process, savepointPath)).isReadyWithin(100 seconds))
+  private def deployProcess(process: CanonicalProcess,
+                            processVersion: ProcessVersion,
+                            deploymentUpdateStrategy: DeploymentUpdateStrategy,
+                            deploymentManager: DeploymentManager): Assertion = {
+    assert(
+      deploymentManager
+        .processCommand(DMRunDeploymentCommand(processVersion, DeploymentData.empty, process, deploymentUpdateStrategy))
+        .isReadyWithin(100 seconds)
+    )
   }
 
   protected def cancelProcess(processId: String, deploymentManager: DeploymentManager): Unit = {
