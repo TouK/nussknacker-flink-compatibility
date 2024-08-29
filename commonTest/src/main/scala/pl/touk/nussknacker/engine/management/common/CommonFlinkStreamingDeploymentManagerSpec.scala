@@ -9,7 +9,7 @@ import pl.touk.nussknacker.engine.api.deployment.{DataFreshnessPolicy, Deploymen
 import pl.touk.nussknacker.engine.api.process.{ProcessId, ProcessName, VersionId}
 import pl.touk.nussknacker.engine.build.ScenarioBuilder
 import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
-import pl.touk.nussknacker.engine.spel.Implicits._
+import pl.touk.nussknacker.engine.spel.SpelExtension._
 
 
 trait CommonFlinkStreamingDeploymentManagerSpec extends AnyFunSuite with Matchers with StreamingDockerTest {
@@ -40,10 +40,10 @@ trait CommonFlinkStreamingDeploymentManagerSpec extends AnyFunSuite with Matcher
     val baseProcessBuilder = ScenarioBuilder.streaming(id)
     parallelism.map(baseProcessBuilder.parallelism).getOrElse(baseProcessBuilder)
       .source("startProcess", "periodic",
-        "period" -> "T(java.time.Duration).ofSeconds(10)",
-        "count" -> "1",
-        "value" -> "'dummy'")
-      .filter("nightFilter", "true")
+        "period" -> "T(java.time.Duration).ofSeconds(10)".spel,
+        "count" -> "1".spel,
+        "value" -> "'dummy'".spel)
+      .filter("nightFilter", "true".spel)
       .emptySink("dead-end", "dead-end")
   }
 
