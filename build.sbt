@@ -13,7 +13,7 @@ val silencerV = "1.7.0"
 
 val flink114V = "1.14.5"
 val flink116V = "1.16.0"
-val currentFlinkV = "1.18.1"
+val currentFlinkV = "1.19.1"
 val sttpV = "3.8.11"
 val kafkaV = "3.3.1"
 val testContainersScalaV = "0.41.0"
@@ -21,7 +21,7 @@ val testContainersScalaV = "0.41.0"
 ThisBuild / version := "0.1-SNAPSHOT"
 
 // todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
-val defaultNussknackerV = "1.17.0-RC1"
+val defaultNussknackerV = "1.18.0-preview_nu-1790-bump-flink-to-1.19-2024-09-05-20289-ec6972205-SNAPSHOT"
 
 val nussknackerV = {
   val v = sys.env

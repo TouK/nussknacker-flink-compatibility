@@ -14,7 +14,7 @@ trait FlinkSpec extends BeforeAndAfterAll {
     super.beforeAll()
 
     val userFlinkClusterConfig = prepareFlinkConfiguration()
-    userFlinkClusterConfig.setBoolean(CoreOptions.FILESYTEM_DEFAULT_OVERRIDE, true)
+    userFlinkClusterConfig.set[java.lang.Boolean](CoreOptions.FILESYTEM_DEFAULT_OVERRIDE, true)
     flinkMiniCluster = FlinkMiniClusterHolder(userFlinkClusterConfig, prepareEnvConfig())
     flinkMiniCluster.start()
   }
