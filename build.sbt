@@ -155,7 +155,7 @@ lazy val flink116ModelCompat = (project in file("flink116/model"))
     dependencyOverrides ++= Seq(
       "org.apache.kafka" % "kafka-clients" % kafkaV,
       "org.apache.kafka" %% "kafka" % kafkaV,
-    ),
+    ) ++ flinkOverrides(flink116V),
   )
   .dependsOn(commonTest % "test,it")
 
@@ -220,9 +220,9 @@ def managerDeps(version: String) = Seq(
 )
 
 def deps(version: String) = Seq(
-  "org.apache.flink" %% "flink-streaming-scala" % version % "provided",
   "org.apache.flink" % "flink-statebackend-rocksdb" % version % "provided",
   "pl.touk.nussknacker" %% "nussknacker-default-model" % nussknackerV,
+  "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-base-components" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-base-unbounded-components" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV,
@@ -234,12 +234,15 @@ def deps(version: String) = Seq(
 
 def flinkOverrides(version: String) = Seq(
   "org.apache.flink" %% "flink-streaming-scala" % version % "provided",
-  "org.apache.flink" %% "flink-scala" % version % "provided",
+  "org.apache.flink" % "flink-streaming-java" % version % "provided",
+  "org.apache.flink" % "flink-core" % version  % "provided",
+  "org.apache.flink" % "flink-rpc-akka-loader" % version  % "provided",
+  "org.apache.flink" %% "flink-scala" % version  % "provided",
+  "org.apache.flink" % "flink-avro" % version % "provided",
+  "org.apache.flink" % "flink-runtime" % version % "provided",
+  "org.apache.flink" % "flink-test-utils" % version % "provided",
   "org.apache.flink" % "flink-statebackend-rocksdb" % version % "provided",
-  "org.apache.flink" % "flink-avro" % version,
-  "org.apache.flink" %% "flink-runtime" % version % "provided",
   "org.apache.flink" %% "flink-connector-kafka" % version % "provided",
-  "org.apache.flink" %% "flink-test-utils" % version % "test",
   "org.apache.flink" % "flink-metrics-dropwizard" % version % "test",
 )
 
@@ -275,6 +278,9 @@ def nussknackerAssemblyStrategy: String => MergeStrategy = {
   case PathList("com", "esotericsoftware", "minlog", "Log.class") =>
     MergeStrategy.first
   case PathList("com", "esotericsoftware", "minlog", "Log$Logger.class") =>
+    MergeStrategy.first
+
+  case PathList(ps @ _*) if ps.last.matches("AvroSerializersRegistrar.*.class") =>
     MergeStrategy.first
 
   case x => MergeStrategy.defaultMergeStrategy(x)
