@@ -16,7 +16,7 @@ trait BaseSchemaCompatibilityTest extends AnyFunSuite with Matchers {
     val executionConfigWithoutKryo: ExecutionConfig = new ExecutionConfig
     val serializerSnapshot = detection.forType(typingResult)
       .createSerializer(executionConfigWithoutKryo)
-      .snapshotConfiguration()
-    serializerSnapshot.resolveSchemaCompatibility(serializerSnapshot).isCompatibleAsIs shouldBe true
+    serializerSnapshot.snapshotConfiguration().resolveSchemaCompatibility(serializerSnapshot)
+      .isCompatibleAsIs shouldBe true
   }
 }
