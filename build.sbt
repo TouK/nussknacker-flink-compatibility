@@ -280,7 +280,8 @@ def nussknackerAssemblyStrategy: String => MergeStrategy = {
   case PathList("com", "esotericsoftware", "minlog", "Log$Logger.class") =>
     MergeStrategy.first
 
-  case PathList(ps @ _*) if ps.last.matches("AvroUtilCompatibilityLayer.*.class") =>
+  case PathList(ps @ _*) if ps.last.matches("AvroUtilsCompatibilityLayer.*.class") ||
+    ps.last.matches("CompositeTypeSerializerUtilCompatibilityLayer.*.class") =>
     MergeStrategy.first
 
   case x => MergeStrategy.defaultMergeStrategy(x)
