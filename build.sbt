@@ -227,7 +227,9 @@ def deps(version: String) = Seq(
   "pl.touk.nussknacker" %% "nussknacker-flink-base-unbounded-components" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV % "test",
-  "org.apache.flink" %% "flink-streaming-scala" % version % "test",
+  "org.apache.flink" %% "flink-streaming-scala" % version % "test, provided",
+  // in normal deployment (from designer) flink-metrics-dropwizard and flink-metrics-dropwizard-core should be replaced in flink-dropwizard-metrics-deps directory in container/distribution
+  "org.apache.flink" % "flink-metrics-dropwizard" % version
 )
 
 def flinkOverrides(version: String) = Seq(
