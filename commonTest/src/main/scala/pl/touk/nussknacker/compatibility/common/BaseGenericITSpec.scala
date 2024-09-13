@@ -20,19 +20,18 @@ import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
 import pl.touk.nussknacker.engine.deployment.DeploymentData
 import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder
 import pl.touk.nussknacker.engine.flink.util.transformer.{FlinkBaseComponentProvider, FlinkKafkaComponentProvider}
-import pl.touk.nussknacker.engine.kafka.{KafkaConfig, KafkaSpec, KafkaTestUtils}
+import pl.touk.nussknacker.engine.kafka.{KafkaConfig, KafkaSpec, KafkaTestUtils, UnspecializedTopicName}
 import pl.touk.nussknacker.engine.process.ExecutionConfigPreparer.{ProcessSettingsPreparer, UnoptimizedSerializationPreparer}
 import pl.touk.nussknacker.engine.process.compiler.FlinkProcessCompilerDataFactory
 import pl.touk.nussknacker.engine.process.registrar.FlinkProcessRegistrar
 import pl.touk.nussknacker.engine.process.{ExecutionConfigPreparer, FlinkJobConfig}
 import pl.touk.nussknacker.engine.schemedkafka._
-import pl.touk.nussknacker.engine.schemedkafka.encode.BestEffortAvroEncoder
+import pl.touk.nussknacker.engine.schemedkafka.encode.ToAvroSchemaBasedEncoder
 import pl.touk.nussknacker.engine.schemedkafka.kryo.AvroSerializersRegistrar
 import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.confluent.ConfluentUtils
 import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.confluent.client.{MockConfluentSchemaRegistryClientFactory, MockSchemaRegistryClient}
 import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.universal.MockSchemaRegistryClientFactory
 import pl.touk.nussknacker.engine.schemedkafka.schemaregistry.{ExistingSchemaVersion, LatestSchemaVersion, SchemaRegistryClientFactory, SchemaVersionOption}
-import pl.touk.nussknacker.engine.spel
 import pl.touk.nussknacker.engine.testing.LocalModelData
 
 import java.nio.charset.StandardCharsets
@@ -55,7 +54,7 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
 
   import KafkaTestUtils._
   import MockSchemaRegistry._
-  import spel.Implicits._
+  import pl.touk.nussknacker.engine.spel.SpelExtension._
   import KafkaUniversalComponentTransformer._
 
   override lazy val config: Config = ConfigFactory.load()
@@ -74,7 +73,7 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
 
   lazy val kafkaConfig: KafkaConfig = KafkaConfig.parseConfig(config, "components.mockKafka.config")
 
-  protected val avroEncoder: BestEffortAvroEncoder = BestEffortAvroEncoder(ValidationMode.strict)
+  protected val avroEncoder: ToAvroSchemaBasedEncoder = ToAvroSchemaBasedEncoder(ValidationMode.strict)
 
   private val givenNotMatchingAvroObj = avroEncoder.encodeRecordOrError(
     Map("first" -> "Zenon", "last" -> "Nowak"), RecordSchemaV1
@@ -103,19 +102,19 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
       .source(
         "start",
         "kafka",
-        topicParamName.value -> s"'${topicConfig.input}'",
-        schemaVersionParamName.value -> versionOptionParam(versionOption)
+        topicParamName.value -> s"'${topicConfig.input}'".spel,
+        schemaVersionParamName.value -> versionOptionParam(versionOption).spel
       )
-      .filter("name-filter", "#input.first == 'Jan'")
+      .filter("name-filter", "#input.first == 'Jan'".spel)
       .emptySink(
         "end",
         "kafka",
-        sinkKeyParamName.value -> "",
-        sinkRawEditorParamName.value -> "true",
-        sinkValueParamName.value -> "#input",
-        topicParamName.value -> s"'${topicConfig.output}'",
-        schemaVersionParamName.value -> s"'${SchemaVersionOption.LatestOptionName}'",
-        sinkValidationModeParamName.value -> s"'${validationMode.name}'"
+        sinkKeyParamName.value -> "".spel,
+        sinkRawEditorParamName.value -> "true".spel,
+        sinkValueParamName.value -> "#input".spel,
+        topicParamName.value -> s"'${topicConfig.output}'".spel,
+        schemaVersionParamName.value -> s"'${SchemaVersionOption.LatestOptionName}'".spel,
+        sinkValidationModeParamName.value -> s"'${validationMode.name}'".spel
       )
 
   private def avroFromScratchProcess(topicConfig: TopicConfig, versionOption: SchemaVersionOption) =
@@ -125,18 +124,18 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
       .source(
         "start",
         "kafka",
-        topicParamName.value -> s"'${topicConfig.input}'",
-        schemaVersionParamName.value -> versionOptionParam(versionOption)
+        topicParamName.value -> s"'${topicConfig.input}'".spel,
+        schemaVersionParamName.value -> versionOptionParam(versionOption).spel
       )
       .emptySink(
         "end",
         "kafka",
-        sinkKeyParamName.value -> "",
-        sinkRawEditorParamName.value -> "true",
-        sinkValueParamName.value -> s"{first: #input.first, last: #input.last}",
-        topicParamName.value -> s"'${topicConfig.output}'",
-        sinkValidationModeParamName.value -> s"'${ValidationMode.strict.name}'",
-        schemaVersionParamName.value -> "'1'"
+        sinkKeyParamName.value -> "".spel,
+        sinkRawEditorParamName.value -> "true".spel,
+        sinkValueParamName.value -> s"{first: #input.first, last: #input.last}".spel,
+        topicParamName.value -> s"'${topicConfig.output}'".spel,
+        sinkValidationModeParamName.value -> s"'${ValidationMode.strict.name}'".spel,
+        schemaVersionParamName.value -> "'1'".spel
       )
 
   private def versionOptionParam(versionOption: SchemaVersionOption) =
@@ -248,7 +247,7 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
         modelData.namingStrategy,
         ComponentUseCase.TestRuntime
       ),
-      FlinkJobConfig(None, None),
+      FlinkJobConfig(None, None, None),
       executionConfigPreparerChain(modelData)
     )
   }
@@ -289,8 +288,8 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
     val topicConfig = TopicConfig(name, schemas)
 
     schemas.foreach(schema => {
-      val inputSubject = ConfluentUtils.topicSubject(topicConfig.input, topicConfig.isKey)
-      val outputSubject = ConfluentUtils.topicSubject(topicConfig.output, topicConfig.isKey)
+      val inputSubject = ConfluentUtils.topicSubject(UnspecializedTopicName(topicConfig.input), topicConfig.isKey)
+      val outputSubject = ConfluentUtils.topicSubject(UnspecializedTopicName(topicConfig.output), topicConfig.isKey)
       val parsedSchema = ConfluentUtils.convertToAvroSchema(schema)
       schemaRegistryMockClient.register(inputSubject, parsedSchema)
       schemaRegistryMockClient.register(outputSubject, parsedSchema)

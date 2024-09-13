@@ -50,19 +50,19 @@ trait BaseTimestampTest extends AnyFunSuiteLike with BeforeAndAfterAll with Befo
   }
 
   protected def runWithAssigner(assigner: Option[TimestampWatermarkHandler[String]]): JobExecutionResult = {
-    import spel.Implicits._
+    import pl.touk.nussknacker.engine.spel.SpelExtension._
     val process = ScenarioBuilder.streaming("timestamps")
       .parallelism(1)
       .source("source", "source")
       .customNode("custom", "output", "check")
-      .emptySink("log", "log", "Value" -> "#output")
+      .emptySink("log", "log", "Value" -> "#output".spel)
 
     val creator = new TestCreator(assigner, sinkForLongsResultsHolder())
 
     val modelData = LocalModelData(prepareConfig, Nil, creator)
     val env = flinkMiniCluster.createExecutionEnvironment()
     val registrar = FlinkProcessRegistrar(new FlinkProcessCompilerDataFactory(creator, modelData.extractModelDefinitionFun, prepareConfig, modelData.namingStrategy, ComponentUseCase.TestRuntime),
-      FlinkJobConfig(None, None), ExecutionConfigPreparer.unOptimizedChain(modelData))
+      FlinkJobConfig(None, None, None), ExecutionConfigPreparer.unOptimizedChain(modelData))
     registrar.register(env, process, ProcessVersion.empty, DeploymentData.empty)
     env.executeAndWaitForFinished(process.name.value)()
   }
