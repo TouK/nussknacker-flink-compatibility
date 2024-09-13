@@ -3,9 +3,9 @@ package pl.touk.nussknacker.engine.process.typeinformation.internal.typedobject
 import org.apache.flink.api.common.typeutils.CompositeTypeSerializerUtil.IntermediateCompatibilityResult
 import org.apache.flink.api.common.typeutils.{CompositeTypeSerializerUtil, TypeSerializer, TypeSerializerSnapshot}
 
-private[typedobject] object CompositeTypeSerializerUtilCompatibilityLayer {
+class Flink116CompositeTypeSerializerUtilCompatibilityProvider extends CompositeTypeSerializerUtilCompatibilityProvider {
 
-  def constructIntermediateCompatibilityResult[T](
+  override def constructIntermediateCompatibilityResult[T](
       newNestedSerializerSnapshots: Array[TypeSerializer[_]],
       oldNestedSerializerSnapshots: Array[TypeSerializerSnapshot[_]]
   ): IntermediateCompatibilityResult[T] = {

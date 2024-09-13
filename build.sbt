@@ -21,7 +21,7 @@ val testContainersScalaV = "0.41.0"
 ThisBuild / version := "0.1-SNAPSHOT"
 
 // todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
-val defaultNussknackerV = "1.18.0-preview_nu-1790-bump-flink-to-1.19-2024-09-09-20415-fdf22885e-SNAPSHOT"
+val defaultNussknackerV = "1.18.0-preview_nu-1790-bump-flink-to-1.19-2024-09-13-20529-e4a3035fa-SNAPSHOT"
 
 val nussknackerV = {
   val v = sys.env
@@ -279,10 +279,5 @@ def nussknackerAssemblyStrategy: String => MergeStrategy = {
     MergeStrategy.first
   case PathList("com", "esotericsoftware", "minlog", "Log$Logger.class") =>
     MergeStrategy.first
-
-  case PathList(ps @ _*) if ps.last.matches("AvroUtilsCompatibilityLayer.*.class") ||
-    ps.last.matches("CompositeTypeSerializerUtilCompatibilityLayer.*.class") =>
-    MergeStrategy.first
-
   case x => MergeStrategy.defaultMergeStrategy(x)
 }
