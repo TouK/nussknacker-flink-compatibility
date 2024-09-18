@@ -21,7 +21,7 @@ val testContainersScalaV = "0.41.0"
 ThisBuild / version := "0.1-SNAPSHOT"
 
 // todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
-val defaultNussknackerV = "1.18.0-preview_nu-1790-bump-flink-to-1.19-2024-09-13-20529-e4a3035fa-SNAPSHOT"
+val defaultNussknackerV = "1.18.0-preview_nu-1790-bump-flink-to-1.19-2024-09-18-20605-c1f58c905-SNAPSHOT"
 
 val nussknackerV = {
   val v = sys.env
