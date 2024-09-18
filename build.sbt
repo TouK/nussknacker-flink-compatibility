@@ -82,6 +82,26 @@ def commonSettings(scalaV: String) =
     assembly / test := {}
   )
 
+lazy val flinkBackwardsCompatibleKafkaComponents = (project in file("backwards-compatible-kafka-components"))
+  .settings(commonSettings(scala212V))
+  .settings(
+    name := "flinkBackwardsCompatibleKafkaComponents",
+    libraryDependencies ++= {
+      Seq(
+        "pl.touk.nussknacker" %% "nussknacker-flink-components-api" % nussknackerV % "provided",
+        "pl.touk.nussknacker" %% "nussknacker-flink-extensions-api" % nussknackerV % "provided",
+        "pl.touk.nussknacker" %% "nussknacker-utils" % nussknackerV %  "provided",
+        "pl.touk.nussknacker" %% "nussknacker-components-utils" % nussknackerV % "provided",
+        "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
+        "org.apache.flink" % "flink-streaming-java"  % flink116V,
+      )
+    },
+    dependencyOverrides ++= Seq(
+      "org.apache.kafka" % "kafka-clients" % kafkaV,
+      "org.apache.kafka" %% "kafka" % kafkaV,
+    ),
+  )
+
 //Here we use Flink version from Nussknacker, in each compatibility provider it will be overridden.
 lazy val commonTest = (project in file("commonTest"))
   .settings(commonSettings(scala212V))
@@ -103,7 +123,6 @@ lazy val commonTest = (project in file("commonTest"))
         ExclusionRule("org.apache.flink", "flink-scala_2.12"),
       ),
       "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
-      "pl.touk.nussknacker" %% "nussknacker-flink-kafka-components" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-flink-base-components" % nussknackerV,
       "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % sttpV,
     ),
@@ -111,7 +130,7 @@ lazy val commonTest = (project in file("commonTest"))
       "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
       "org.scala-lang.modules" %% "scala-xml" % "2.1.0"
     )
-  )
+  ).dependsOn(flinkBackwardsCompatibleKafkaComponents)
 
 lazy val flink114ModelCompat = (project in file("flink114/model"))
   .settings(commonSettings(scala212V))
