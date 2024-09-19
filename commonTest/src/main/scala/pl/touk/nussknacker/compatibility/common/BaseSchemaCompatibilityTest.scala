@@ -5,13 +5,14 @@ import org.apache.flink.api.common.ExecutionConfig
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 import pl.touk.nussknacker.engine.api.typed.typing.Typed
-import pl.touk.nussknacker.engine.process.typeinformation.TypingResultAwareTypeInformationDetection
+import pl.touk.nussknacker.engine.flink.api.typeinformation.TypeInformationDetection
+import pl.touk.nussknacker.engine.process.typeinformation.DefaultTypingResultAwareTypeInformationDetection
 
 @silent("deprecated")
 trait BaseSchemaCompatibilityTest extends AnyFunSuite with Matchers {
 
   test("Cheks schema compatibility") {
-    val detection = new TypingResultAwareTypeInformationDetection
+    val detection = TypeInformationDetection.instance
     val typingResult = Typed.record(Map("int" -> Typed[Int]))
     val executionConfigWithoutKryo: ExecutionConfig = new ExecutionConfig
     val serializerSnapshot = detection.forType(typingResult)

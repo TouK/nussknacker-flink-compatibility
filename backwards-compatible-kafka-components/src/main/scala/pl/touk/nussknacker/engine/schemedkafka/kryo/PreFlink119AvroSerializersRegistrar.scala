@@ -5,7 +5,7 @@ import org.apache.avro.generic.GenericData
 import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.java.typeutils.AvroUtils
 
-class BeforeFlink119AvroSerializersRegistrar extends AvroSerializersRegistrar with LazyLogging {
+class PreFlink119AvroSerializersRegistrar extends AvroSerializersRegistrar with LazyLogging {
 
   protected override def registerAvroSerializers(executionConfig: ExecutionConfig): Unit = {
     AvroUtils.getAvroUtils.addAvroSerializersIfRequired(
