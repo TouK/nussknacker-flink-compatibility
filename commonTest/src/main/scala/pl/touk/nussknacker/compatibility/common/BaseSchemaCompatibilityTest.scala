@@ -6,7 +6,6 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 import pl.touk.nussknacker.engine.api.typed.typing.Typed
 import pl.touk.nussknacker.engine.flink.api.typeinformation.TypeInformationDetection
-import pl.touk.nussknacker.engine.process.typeinformation.DefaultTypingResultAwareTypeInformationDetection
 
 @silent("deprecated")
 trait BaseSchemaCompatibilityTest extends AnyFunSuite with Matchers {
