@@ -21,7 +21,8 @@ val testContainersScalaV = "0.41.0"
 ThisBuild / version := "0.1-SNAPSHOT"
 
 // todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
-val defaultNussknackerV = "1.18.0-preview_nu-1790-bump-flink-to-1.19-2024-09-20-20656-526bcb7a5-SNAPSHOT"
+val defaultNussknackerV =
+  "1.18.0-preview_nu-1790-bump-flink-to-1.19-2024-09-20-20656-526bcb7a5-SNAPSHOT"
 
 val nussknackerV = {
   val v = sys.env
@@ -64,14 +65,14 @@ def commonSettings(scalaV: String) =
       "com.github.ghik" % "silencer-plugin" % (CrossVersion
         .partialVersion(scalaVersion.value) match {
         case Some((2, 12)) => silencerV_2_12
-        case _ => silencerV
+        case _             => silencerV
       }) cross CrossVersion.full
     ),
     libraryDependencies ++= Seq(
       "com.github.ghik" % "silencer-lib" % (CrossVersion
         .partialVersion(scalaVersion.value) match {
         case Some((2, 12)) => silencerV_2_12
-        case _ => silencerV
+        case _             => silencerV
       }) % Provided cross CrossVersion.full,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionsCompatV
     ),
@@ -111,7 +112,7 @@ lazy val commonTest = (project in file("commonTest"))
       "pl.touk.nussknacker" %% "nussknacker-default-model" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-kafka-test-utils" % nussknackerV,
-      "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV excludeAll(
+      "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV excludeAll (
         ExclusionRule("log4j", "log4j"),
         ExclusionRule("org.slf4j", "slf4j-log4j12"),
         ExclusionRule("org.apache.flink", "flink-scala_2.12"),
@@ -121,16 +122,17 @@ lazy val commonTest = (project in file("commonTest"))
       "com.dimafeng" %% "testcontainers-scala-scalatest" % testContainersScalaV,
       "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV excludeAll (
         ExclusionRule("org.apache.flink", "flink-scala_2.12"),
-        ),
+      ),
       "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
       "pl.touk.nussknacker" %% "nussknacker-flink-base-components" % nussknackerV,
-      "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % sttpV,
+      "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % sttpV
     ),
     dependencyOverrides ++= Seq(
       "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
       "org.scala-lang.modules" %% "scala-xml" % "2.1.0"
     )
-  ).dependsOn(flinkBackwardsCompatibleKafkaComponents)
+  )
+  .dependsOn(flinkBackwardsCompatibleKafkaComponents)
 
 lazy val flink114ModelCompat = (project in file("flink114/model"))
   .settings(commonSettings(scala212V))
@@ -140,8 +142,8 @@ lazy val flink114ModelCompat = (project in file("flink114/model"))
     libraryDependencies ++= deps(flink114V),
     dependencyOverrides ++= Seq(
       "org.apache.kafka" % "kafka-clients" % kafkaV,
-      "org.apache.kafka" %% "kafka" % kafkaV,
-    ),
+      "org.apache.kafka" %% "kafka" % kafkaV
+    )
   )
   .dependsOn(commonTest % "test,it")
 
@@ -162,7 +164,7 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager"))
     ),
     IntegrationTest / Keys.test := (IntegrationTest / Keys.test)
       .dependsOn(flink114ModelCompat / Compile / assembly)
-      .value,
+      .value
   )
   .dependsOn(commonTest % "test,it")
 
@@ -173,8 +175,8 @@ lazy val flink116ModelCompat = (project in file("flink116/model"))
     libraryDependencies ++= deps(flink116V),
     dependencyOverrides ++= Seq(
       "org.apache.kafka" % "kafka-clients" % kafkaV,
-      "org.apache.kafka" %% "kafka" % kafkaV,
-    ) ++ flinkOverrides(flink116V),
+      "org.apache.kafka" %% "kafka" % kafkaV
+    ) ++ flinkOverrides(flink116V)
   )
   .dependsOn(commonTest % "test,it")
 
@@ -194,7 +196,7 @@ lazy val flink116ManagerCompat = (project in file("flink116/manager"))
     ),
     IntegrationTest / Keys.test := (IntegrationTest / Keys.test)
       .dependsOn(flink116ModelCompat / Compile / assembly)
-      .value,
+      .value
   )
   .dependsOn(commonTest % "test,it")
 
@@ -218,7 +220,9 @@ def flinkOverridesCommonForBefore1_15(version: String) =
 def flinkSettingsCommonForBefore1_15(version: String) = Seq(
   excludeDependencies ++= flinkExclusionsForBefore1_15,
   libraryDependencies ++= flinkDependenciesCommonForBefore1_15(version),
-  dependencyOverrides ++= flinkOverrides(version) ++ flinkOverridesCommonForBefore1_15(
+  dependencyOverrides ++= flinkOverrides(
+    version
+  ) ++ flinkOverridesCommonForBefore1_15(
     version
   )
 )
@@ -226,16 +230,16 @@ def flinkSettingsCommonForBefore1_15(version: String) = Seq(
 def managerDeps(version: String) = Seq(
   "pl.touk.nussknacker" %% "nussknacker-flink-manager" % nussknackerV excludeAll (
     ExclusionRule("org.apache.flink", "flink-scala_2.12"),
-    ),
+  ),
   "pl.touk.nussknacker" %% "nussknacker-http-utils" % nussknackerV % "provided,it,test",
   "pl.touk.nussknacker" %% "nussknacker-scenario-compiler" % nussknackerV % "provided,it,test",
   "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
-  "org.apache.flink" %% "flink-streaming-scala" % version excludeAll(
+  "org.apache.flink" %% "flink-streaming-scala" % version excludeAll (
     ExclusionRule("log4j", "log4j"),
     ExclusionRule("org.slf4j", "slf4j-log4j12"),
   ),
   "com.dimafeng" %% "testcontainers-scala-scalatest" % testContainersScalaV % "it,test",
-  "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % sttpV,
+  "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % sttpV
 )
 
 def deps(version: String) = Seq(
@@ -262,36 +266,36 @@ def flinkOverrides(version: String) = Seq(
   "org.apache.flink" % "flink-test-utils" % version % "provided",
   "org.apache.flink" % "flink-statebackend-rocksdb" % version % "provided",
   "org.apache.flink" %% "flink-connector-kafka" % version % "provided",
-  "org.apache.flink" % "flink-metrics-dropwizard" % version % "test",
+  "org.apache.flink" % "flink-metrics-dropwizard" % version % "test"
 )
 
 def nussknackerAssemblyStrategy: String => MergeStrategy = {
-  case PathList(ps@_*) if ps.last == "NumberUtils.class" =>
+  case PathList(ps @ _*) if ps.last == "NumberUtils.class" =>
     MergeStrategy.first
-  case PathList("org", "apache", "commons", "logging", _@_*) =>
+  case PathList("org", "apache", "commons", "logging", _ @_*) =>
     MergeStrategy.first
-  case PathList("javax", "activation", _@_*) => MergeStrategy.first
-  case PathList("javax", "el", xs@_*) => MergeStrategy.first
-  case PathList("javax", "validation", xs@_*) => MergeStrategy.first
-  case PathList("com", "sun", "activation", _@_*) => MergeStrategy.first
-  case PathList(ps@_*) if ps.last == "io.netty.versions.properties" =>
+  case PathList("javax", "activation", _ @_*)      => MergeStrategy.first
+  case PathList("javax", "el", xs @ _*)            => MergeStrategy.first
+  case PathList("javax", "validation", xs @ _*)    => MergeStrategy.first
+  case PathList("com", "sun", "activation", _ @_*) => MergeStrategy.first
+  case PathList(ps @ _*) if ps.last == "io.netty.versions.properties" =>
     MergeStrategy.first
-  case PathList(ps@_*) if ps.last == "mailcap.default" => MergeStrategy.first
-  case PathList(ps@_*) if ps.last == "mimetypes.default" =>
+  case PathList(ps @ _*) if ps.last == "mailcap.default" => MergeStrategy.first
+  case PathList(ps @ _*) if ps.last == "mimetypes.default" =>
     MergeStrategy.first
-  case PathList(ps@_*) if ps.last == "module-info.class" =>
+  case PathList(ps @ _*) if ps.last == "module-info.class" =>
     MergeStrategy.first
   case PathList("org", "apache", "commons", "collections", ps)
-    if ps.contains("FastHashMap") || ps == "ArrayStack.class" =>
+      if ps.contains("FastHashMap") || ps == "ArrayStack.class" =>
     MergeStrategy.first
-  case PathList(ps@_*)
-    if ps.last.matches("FlinkMetricsProviderForScenario.*.class") =>
+  case PathList(ps @ _*)
+      if ps.last.matches("FlinkMetricsProviderForScenario.*.class") =>
     MergeStrategy.first
-  case PathList(ps@_*) if ps.last == "MetricUtils.class" =>
+  case PathList(ps @ _*) if ps.last == "MetricUtils.class" =>
     MergeStrategy.first
-  case PathList(ps@_*) if ps.head == "draftv4" && ps.last == "schema" =>
+  case PathList(ps @ _*) if ps.head == "draftv4" && ps.last == "schema" =>
     MergeStrategy.first //Due to swagger-parser dependencies having different schema definitions
-  case PathList(ps@_*) if ps.last.matches("CollectionSource.*.class") =>
+  case PathList(ps @ _*) if ps.last.matches("CollectionSource.*.class") =>
     MergeStrategy.first
 
   case PathList("com", "esotericsoftware", "minlog", "Log.class") =>
