@@ -21,8 +21,7 @@ val testContainersScalaV = "0.41.0"
 ThisBuild / version := "0.1-SNAPSHOT"
 
 // todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
-val defaultNussknackerV =
-  "1.18.0-preview_nu-1790-bump-flink-to-1.19-2024-09-20-20656-526bcb7a5-SNAPSHOT"
+val defaultNussknackerV = "staging-latest"
 
 val nussknackerV = {
   val v = sys.env
@@ -164,7 +163,7 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager"))
     ),
     IntegrationTest / Keys.test := (IntegrationTest / Keys.test)
       .dependsOn(flink114ModelCompat / Compile / assembly)
-      .value
+      .value,
   )
   .dependsOn(commonTest % "test,it")
 
@@ -196,7 +195,7 @@ lazy val flink116ManagerCompat = (project in file("flink116/manager"))
     ),
     IntegrationTest / Keys.test := (IntegrationTest / Keys.test)
       .dependsOn(flink116ModelCompat / Compile / assembly)
-      .value
+      .value,
   )
   .dependsOn(commonTest % "test,it")
 
@@ -220,11 +219,7 @@ def flinkOverridesCommonForBefore1_15(version: String) =
 def flinkSettingsCommonForBefore1_15(version: String) = Seq(
   excludeDependencies ++= flinkExclusionsForBefore1_15,
   libraryDependencies ++= flinkDependenciesCommonForBefore1_15(version),
-  dependencyOverrides ++= flinkOverrides(
-    version
-  ) ++ flinkOverridesCommonForBefore1_15(
-    version
-  )
+  dependencyOverrides ++= flinkOverrides(version) ++ flinkOverridesCommonForBefore1_15(version)
 )
 
 def managerDeps(version: String) = Seq(
