@@ -82,25 +82,25 @@ def commonSettings(scalaV: String) =
     assembly / test := {}
   )
 
-lazy val flinkBackwardsCompatibleKafkaComponents = (project in file("backwards-compatible-kafka-components"))
-  .settings(commonSettings(scala212V))
-  .settings(
-    name := "flink-backwards-compatible-kafka-components",
-    libraryDependencies ++= {
-      Seq(
-        "pl.touk.nussknacker" %% "nussknacker-flink-components-api" % nussknackerV % "provided",
-        "pl.touk.nussknacker" %% "nussknacker-flink-extensions-api" % nussknackerV % "provided",
-        "pl.touk.nussknacker" %% "nussknacker-utils" % nussknackerV % "provided",
-        "pl.touk.nussknacker" %% "nussknacker-components-utils" % nussknackerV % "provided",
-        "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
-        "org.apache.flink" % "flink-streaming-java" % flink116V,
+lazy val flinkBackwardsCompatibleKafkaComponents =
+  (project in file("backwards-compatible-kafka-components"))
+    .settings(commonSettings(scala212V))
+    .settings(
+      name := "flink-backwards-compatible-kafka-components",
+      libraryDependencies ++= {
+        Seq(
+          "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
+          "pl.touk.nussknacker" %% "nussknacker-flink-components-api" % nussknackerV % "provided",
+          "pl.touk.nussknacker" %% "nussknacker-utils" % nussknackerV % "provided",
+          "pl.touk.nussknacker" %% "nussknacker-components-utils" % nussknackerV % "provided",
+          "org.apache.flink" % "flink-streaming-java" % flink116V % "provided"
+        )
+      },
+      dependencyOverrides ++= Seq(
+        "org.apache.kafka" % "kafka-clients" % kafkaV,
+        "org.apache.kafka" %% "kafka" % kafkaV
       )
-    },
-    dependencyOverrides ++= Seq(
-      "org.apache.kafka" % "kafka-clients" % kafkaV,
-      "org.apache.kafka" %% "kafka" % kafkaV,
-    ),
-  )
+    )
 
 //Here we use Flink version from Nussknacker, in each compatibility provider it will be overridden.
 lazy val commonTest = (project in file("commonTest"))
