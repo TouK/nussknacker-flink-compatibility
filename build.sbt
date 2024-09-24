@@ -234,7 +234,7 @@ def managerDeps(version: String) = Seq(
     ExclusionRule("org.slf4j", "slf4j-log4j12"),
   ),
   "com.dimafeng" %% "testcontainers-scala-scalatest" % testContainersScalaV % "it,test",
-  "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % sttpV
+  "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % sttpV,
 )
 
 def deps(version: String) = Seq(
@@ -247,7 +247,7 @@ def deps(version: String) = Seq(
   "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV % "test",
   "org.apache.flink" %% "flink-streaming-scala" % version % "test, provided",
   // in normal deployment (from designer) flink-metrics-dropwizard and flink-metrics-dropwizard-core should be replaced in flink-dropwizard-metrics-deps directory in container/distribution
-  "org.apache.flink" % "flink-metrics-dropwizard" % version
+  "org.apache.flink" % "flink-metrics-dropwizard" % version,
 )
 
 def flinkOverrides(version: String) = Seq(
@@ -261,7 +261,7 @@ def flinkOverrides(version: String) = Seq(
   "org.apache.flink" % "flink-test-utils" % version % "provided",
   "org.apache.flink" % "flink-statebackend-rocksdb" % version % "provided",
   "org.apache.flink" %% "flink-connector-kafka" % version % "provided",
-  "org.apache.flink" % "flink-metrics-dropwizard" % version % "test"
+  "org.apache.flink" % "flink-metrics-dropwizard" % version % "test",
 )
 
 def nussknackerAssemblyStrategy: String => MergeStrategy = {
@@ -297,5 +297,6 @@ def nussknackerAssemblyStrategy: String => MergeStrategy = {
     MergeStrategy.first
   case PathList("com", "esotericsoftware", "minlog", "Log$Logger.class") =>
     MergeStrategy.first
+
   case x => MergeStrategy.defaultMergeStrategy(x)
 }
