@@ -13,7 +13,7 @@ val silencerV = "1.7.0"
 
 val flink114V = "1.14.5"
 val flink116V = "1.16.0"
-val currentFlinkV = "1.18.1"
+val currentFlinkV = "1.19.1"
 val sttpV = "3.8.11"
 val kafkaV = "3.3.1"
 val testContainersScalaV = "0.41.0"
@@ -21,7 +21,7 @@ val testContainersScalaV = "0.41.0"
 ThisBuild / version := "0.1-SNAPSHOT"
 
 // todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
-val defaultNussknackerV = "1.17.0"
+val defaultNussknackerV = "1.18.0-staging-2024-09-24-20698-40fc17dbe-SNAPSHOT"
 
 val nussknackerV = {
   val v = sys.env
@@ -82,6 +82,26 @@ def commonSettings(scalaV: String) =
     assembly / test := {}
   )
 
+lazy val flinkBackwardsCompatibleKafkaComponents = (project in file("backwards-compatible-kafka-components"))
+  .settings(commonSettings(scala212V))
+  .settings(
+    name := "flink-backwards-compatible-kafka-components",
+    libraryDependencies ++= {
+      Seq(
+        "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
+        "pl.touk.nussknacker" %% "nussknacker-flink-components-api" % nussknackerV % "provided",
+        "pl.touk.nussknacker" %% "nussknacker-flink-extensions-api" % nussknackerV % "provided",
+        "pl.touk.nussknacker" %% "nussknacker-utils" % nussknackerV % "provided",
+        "pl.touk.nussknacker" %% "nussknacker-components-utils" % nussknackerV % "provided",
+        "org.apache.flink" % "flink-streaming-java" % flink116V % "provided"
+      )
+    },
+    dependencyOverrides ++= Seq(
+      "org.apache.kafka" % "kafka-clients" % kafkaV,
+      "org.apache.kafka" %% "kafka" % kafkaV
+    )
+  )
+
 //Here we use Flink version from Nussknacker, in each compatibility provider it will be overridden.
 lazy val commonTest = (project in file("commonTest"))
   .settings(commonSettings(scala212V))
@@ -103,15 +123,15 @@ lazy val commonTest = (project in file("commonTest"))
         ExclusionRule("org.apache.flink", "flink-scala_2.12"),
       ),
       "pl.touk.nussknacker" %% "nussknacker-deployment-manager-api" % nussknackerV % "provided",
-      "pl.touk.nussknacker" %% "nussknacker-flink-kafka-components" % nussknackerV,
       "pl.touk.nussknacker" %% "nussknacker-flink-base-components" % nussknackerV,
-      "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % sttpV,
+      "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % sttpV
     ),
     dependencyOverrides ++= Seq(
       "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
       "org.scala-lang.modules" %% "scala-xml" % "2.1.0"
     )
   )
+  .dependsOn(flinkBackwardsCompatibleKafkaComponents)
 
 lazy val flink114ModelCompat = (project in file("flink114/model"))
   .settings(commonSettings(scala212V))
@@ -121,8 +141,8 @@ lazy val flink114ModelCompat = (project in file("flink114/model"))
     libraryDependencies ++= deps(flink114V),
     dependencyOverrides ++= Seq(
       "org.apache.kafka" % "kafka-clients" % kafkaV,
-      "org.apache.kafka" %% "kafka" % kafkaV,
-    ),
+      "org.apache.kafka" %% "kafka" % kafkaV
+    )
   )
   .dependsOn(commonTest % "test,it")
 
@@ -154,8 +174,8 @@ lazy val flink116ModelCompat = (project in file("flink116/model"))
     libraryDependencies ++= deps(flink116V),
     dependencyOverrides ++= Seq(
       "org.apache.kafka" % "kafka-clients" % kafkaV,
-      "org.apache.kafka" %% "kafka" % kafkaV,
-    ),
+      "org.apache.kafka" %% "kafka" % kafkaV
+    ) ++ flinkOverrides(flink116V)
   )
   .dependsOn(commonTest % "test,it")
 
@@ -199,9 +219,7 @@ def flinkOverridesCommonForBefore1_15(version: String) =
 def flinkSettingsCommonForBefore1_15(version: String) = Seq(
   excludeDependencies ++= flinkExclusionsForBefore1_15,
   libraryDependencies ++= flinkDependenciesCommonForBefore1_15(version),
-  dependencyOverrides ++= flinkOverrides(version) ++ flinkOverridesCommonForBefore1_15(
-    version
-  )
+  dependencyOverrides ++= flinkOverrides(version) ++ flinkOverridesCommonForBefore1_15(version)
 )
 
 def managerDeps(version: String) = Seq(
@@ -220,26 +238,29 @@ def managerDeps(version: String) = Seq(
 )
 
 def deps(version: String) = Seq(
-  "org.apache.flink" %% "flink-streaming-scala" % version % "provided",
   "org.apache.flink" % "flink-statebackend-rocksdb" % version % "provided",
   "pl.touk.nussknacker" %% "nussknacker-default-model" % nussknackerV,
+  "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-base-components" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-base-unbounded-components" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-executor" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-test-utils" % nussknackerV % "test",
   "org.apache.flink" %% "flink-streaming-scala" % version % "test, provided",
   // in normal deployment (from designer) flink-metrics-dropwizard and flink-metrics-dropwizard-core should be replaced in flink-dropwizard-metrics-deps directory in container/distribution
-  "org.apache.flink" % "flink-metrics-dropwizard" % version
+  "org.apache.flink" % "flink-metrics-dropwizard" % version,
 )
 
 def flinkOverrides(version: String) = Seq(
   "org.apache.flink" %% "flink-streaming-scala" % version % "provided",
+  "org.apache.flink" % "flink-streaming-java" % version % "provided",
+  "org.apache.flink" % "flink-core" % version % "provided",
+  "org.apache.flink" % "flink-rpc-akka-loader" % version % "provided",
   "org.apache.flink" %% "flink-scala" % version % "provided",
+  "org.apache.flink" % "flink-avro" % version % "provided",
+  "org.apache.flink" % "flink-runtime" % version % "provided",
+  "org.apache.flink" % "flink-test-utils" % version % "provided",
   "org.apache.flink" % "flink-statebackend-rocksdb" % version % "provided",
-  "org.apache.flink" % "flink-avro" % version,
-  "org.apache.flink" %% "flink-runtime" % version % "provided",
   "org.apache.flink" %% "flink-connector-kafka" % version % "provided",
-  "org.apache.flink" %% "flink-test-utils" % version % "test",
   "org.apache.flink" % "flink-metrics-dropwizard" % version % "test",
 )
 

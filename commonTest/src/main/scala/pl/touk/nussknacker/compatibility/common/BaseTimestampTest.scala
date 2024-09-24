@@ -7,7 +7,6 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.JobExecutionResult
 import org.apache.flink.streaming.api.datastream.DataStream
 import org.apache.flink.streaming.api.functions.{AssignerWithPunctuatedWatermarks, KeyedProcessFunction}
-import org.apache.flink.streaming.api.scala.createTypeInformation
 import org.apache.flink.streaming.api.watermark.Watermark
 import org.apache.flink.util.Collector
 import org.scalatest.funsuite.AnyFunSuiteLike
