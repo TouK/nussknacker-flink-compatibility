@@ -15,5 +15,5 @@ class PreFlink119TypeInformationDetection
       oldNestedSerializerSnapshots
     )
 
-  override def priority: Int = Int.MaxValue
+  override def priority: Int = 0
 }
