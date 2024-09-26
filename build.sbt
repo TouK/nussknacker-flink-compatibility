@@ -102,12 +102,7 @@ lazy val publishSettings = Seq(
     }
   },
   pomExtra in Global     := {
-    <scm>
-      <connection>scm:git:github.com/TouK/nussknacker-flink-compatibility.git</connection>
-      <developerConnection>scm:git:git@github.com:TouK/nussknacker-flink-compatibility.git</developerConnection>
-      <url>github.com/TouK/nussknacker-flink-compatibility.git</url>
-    </scm>
-      <developers>
+    <developers>
         <developer>
           <id>TouK</id>
           <name>TouK</name>
@@ -119,26 +114,6 @@ lazy val publishSettings = Seq(
 )
 
 lazy val disablePublish = publish / skip := true
-
-lazy val flink116KafkaComponents = (project in file("flink116/kafka-components"))
-  .settings(commonSettings)
-  .settings(
-    name := "nussknacker-flink-1.16-kafka-components",
-    libraryDependencies ++= {
-      Seq(
-        "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
-        "pl.touk.nussknacker" %% "nussknacker-flink-components-api"                 % nussknackerV % "provided",
-        "pl.touk.nussknacker" %% "nussknacker-flink-extensions-api"                 % nussknackerV % "provided",
-        "pl.touk.nussknacker" %% "nussknacker-utils"                                % nussknackerV % "provided",
-        "pl.touk.nussknacker" %% "nussknacker-components-utils"                     % nussknackerV % "provided",
-        "org.apache.flink"     % "flink-streaming-java"                             % flink116V    % "provided"
-      )
-    },
-    dependencyOverrides ++= Seq(
-      "org.apache.kafka"  % "kafka-clients" % kafkaV,
-      "org.apache.kafka" %% "kafka"         % kafkaV
-    )
-  )
 
 //Here we use Flink version from Nussknacker, in each compatibility provider it will be overridden.
 lazy val commonTest = (project in file("commonTest"))
@@ -177,14 +152,14 @@ lazy val flink114ModelCompat = (project in file("flink114/model"))
   .settings(disablePublish)
   .settings(flinkSettingsCommonForBefore1_15(flink114V))
   .settings(
-    name := "flink114-model",
+    name := "nussknacker-flink-1-14-model",
     libraryDependencies ++= deps(flink114V),
     dependencyOverrides ++= Seq(
       "org.apache.kafka"  % "kafka-clients" % kafkaV,
       "org.apache.kafka" %% "kafka"         % kafkaV
     )
   )
-  .dependsOn(commonTest % "test,it")
+  .dependsOn(commonTest % Test)
 
 lazy val flink114ManagerCompat = (project in file("flink114/manager"))
   .settings(commonSettings)
@@ -193,7 +168,7 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager"))
   .settings(Defaults.itSettings)
   .settings(flinkSettingsCommonForBefore1_15(flink114V))
   .settings(
-    name                        := "flink114-manager",
+    name                        := "nussknacker-flink-1-14-manager",
     libraryDependencies ++= managerDeps(flink114V),
     dependencyOverrides ++= Seq(
       // For some strange reason, docker client libraries have conflict with schema registry client :/
@@ -206,26 +181,26 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager"))
       .dependsOn(flink114ModelCompat / Compile / assembly)
       .value,
   )
-  .dependsOn(commonTest % "test,it")
+  .dependsOn(commonTest % Test)
 
 lazy val flink116ModelCompat = (project in file("flink116/model"))
   .settings(commonSettings)
   .settings(
-    name := "flink116-model",
+    name := "nussknacker-flink-1-16-model",
     libraryDependencies ++= deps(flink116V),
     dependencyOverrides ++= Seq(
       "org.apache.kafka"  % "kafka-clients" % kafkaV,
       "org.apache.kafka" %% "kafka"         % kafkaV
     ) ++ flinkOverrides(flink116V)
   )
-  .dependsOn(commonTest % "test,it")
+  .dependsOn(commonTest % Test)
 
 lazy val flink116ManagerCompat = (project in file("flink116/manager"))
   .settings(commonSettings)
   .configs(IntegrationTest)
   .settings(Defaults.itSettings)
   .settings(
-    name                        := "flink116-manager",
+    name                        := "nussknacker-flink-1-16-manager",
     libraryDependencies ++= managerDeps(flink116V),
     dependencyOverrides ++= Seq(
       // For some strange reason, docker client libraries have conflict with schema registry client :/
@@ -238,7 +213,27 @@ lazy val flink116ManagerCompat = (project in file("flink116/manager"))
       .dependsOn(flink116ModelCompat / Compile / assembly)
       .value,
   )
-  .dependsOn(commonTest % "test,it")
+  .dependsOn(commonTest % Test)
+
+lazy val flink116KafkaComponents = (project in file("flink116/kafka-components"))
+  .settings(commonSettings)
+  .settings(
+    name := "nussknacker-flink-1-16-kafka-components",
+    libraryDependencies ++= {
+      Seq(
+        "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
+        "pl.touk.nussknacker" %% "nussknacker-flink-components-api"                 % nussknackerV % "provided",
+        "pl.touk.nussknacker" %% "nussknacker-flink-extensions-api"                 % nussknackerV % "provided",
+        "pl.touk.nussknacker" %% "nussknacker-utils"                                % nussknackerV % "provided",
+        "pl.touk.nussknacker" %% "nussknacker-components-utils"                     % nussknackerV % "provided",
+        "org.apache.flink"     % "flink-streaming-java"                             % flink116V    % "provided"
+      )
+    },
+    dependencyOverrides ++= Seq(
+      "org.apache.kafka"  % "kafka-clients" % kafkaV,
+      "org.apache.kafka" %% "kafka"         % kafkaV
+    )
+  )
 
 def flinkExclusionsForBefore1_15 = Seq(
   "org.apache.flink" % "flink-streaming-java",
