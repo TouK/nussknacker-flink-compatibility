@@ -9,6 +9,7 @@ class MockKafkaComponentProvider extends FlinkKafkaComponentProvider {
 
   override def providerName: String = "mockKafka"
 
-  override protected def schemaRegistryClientFactory: SchemaRegistryClientFactory = new MockConfluentSchemaRegistryClientFactory(schemaRegistryMockClient)
+  override protected def schemaRegistryClientFactory: SchemaRegistryClientFactory =
+    new MockConfluentSchemaRegistryClientFactory(schemaRegistryMockClient)
 
 }

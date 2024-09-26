@@ -31,11 +31,12 @@ import java.util.Collections
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-trait StreamingDockerTest extends TestContainersForAll
-  with Matchers
-  with ScalaFutures
-  with Eventually
-  with LazyLogging {
+trait StreamingDockerTest
+    extends TestContainersForAll
+    with Matchers
+    with ScalaFutures
+    with Eventually
+    with LazyLogging {
   self: Suite =>
 
   override type Containers = JobManagerContainer and TaskManagerContainer
@@ -44,7 +45,8 @@ trait StreamingDockerTest extends TestContainersForAll
 
   private val userToAct: User = User("testUser", "Test User")
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(2, Minutes)), interval = scaled(Span(100, Millis)))
+  override implicit val patienceConfig: PatienceConfig =
+    PatienceConfig(timeout = scaled(Span(2, Minutes)), interval = scaled(Span(100, Millis)))
 
   protected def deploymentManagerProvider: FlinkStreamingDeploymentManagerProvider
 
@@ -52,20 +54,21 @@ trait StreamingDockerTest extends TestContainersForAll
   private val backend: SttpBackend[Future, Any] =
     AsyncHttpClientFutureBackend.usingConfig(new DefaultAsyncHttpClientConfig.Builder().build())
 
-
   override def startContainers(): Containers = {
-    val network = Network.newNetwork()
-    val volumeDir = prepareVolumeDir()
-    val jobmanager: JobManagerContainer = JobManagerContainer.Def(flinkVersion, volumeDir, network).start()
-    val jobmanagerHostName = jobmanager.container.getContainerInfo.getConfig.getHostName
+    val network                           = Network.newNetwork()
+    val volumeDir                         = prepareVolumeDir()
+    val jobmanager: JobManagerContainer   = JobManagerContainer.Def(flinkVersion, volumeDir, network).start()
+    val jobmanagerHostName                = jobmanager.container.getContainerInfo.getConfig.getHostName
     val taskmanager: TaskManagerContainer = TaskManagerContainer.Def(flinkVersion, network, jobmanagerHostName).start()
     jobmanager and taskmanager
   }
 
   private def prepareVolumeDir(): Path = {
     import scala.collection.JavaConverters._
-    Files.createTempDirectory("dockerTest",
-      PosixFilePermissions.asFileAttribute(PosixFilePermission.values().toSet[PosixFilePermission].asJava))
+    Files.createTempDirectory(
+      "dockerTest",
+      PosixFilePermissions.asFileAttribute(PosixFilePermission.values().toSet[PosixFilePermission].asJava)
+    )
   }
 
   protected def createDeploymentManager(jobmanagerRestUrl: URL): DeploymentManager = {
@@ -85,18 +88,22 @@ trait StreamingDockerTest extends TestContainersForAll
       actorSystem,
       backend
     )
-    deploymentManagerProvider.createDeploymentManager(
-      ModelData(typeConfig, modelDependencies),
-      deploymentManagerDependencies,
-      typeConfig.deploymentConfig,
-      None
-    ).valueOr(err => throw new IllegalStateException(s"Invalid Deployment Manager: ${err.toList.mkString(", ")}"))
+    deploymentManagerProvider
+      .createDeploymentManager(
+        ModelData(typeConfig, modelDependencies),
+        deploymentManagerDependencies,
+        typeConfig.deploymentConfig,
+        None
+      )
+      .valueOr(err => throw new IllegalStateException(s"Invalid Deployment Manager: ${err.toList.mkString(", ")}"))
   }
 
-  protected def deployProcessAndWaitIfRunning(process: CanonicalProcess,
-                                              processVersion: ProcessVersion,
-                                              deploymentUpdateStrategy: DeploymentUpdateStrategy,
-                                              deploymentManager: DeploymentManager): Assertion = {
+  protected def deployProcessAndWaitIfRunning(
+      process: CanonicalProcess,
+      processVersion: ProcessVersion,
+      deploymentUpdateStrategy: DeploymentUpdateStrategy,
+      deploymentManager: DeploymentManager
+  ): Assertion = {
     implicit val freshnessPolicy: DataFreshnessPolicy = DataFreshnessPolicy.Fresh
     deployProcess(process, processVersion, deploymentUpdateStrategy, deploymentManager)
 
@@ -108,10 +115,12 @@ trait StreamingDockerTest extends TestContainersForAll
     }
   }
 
-  private def deployProcess(process: CanonicalProcess,
-                            processVersion: ProcessVersion,
-                            deploymentUpdateStrategy: DeploymentUpdateStrategy,
-                            deploymentManager: DeploymentManager): Assertion = {
+  private def deployProcess(
+      process: CanonicalProcess,
+      processVersion: ProcessVersion,
+      deploymentUpdateStrategy: DeploymentUpdateStrategy,
+      deploymentManager: DeploymentManager
+  ): Assertion = {
     assert(
       deploymentManager
         .processCommand(DMRunDeploymentCommand(processVersion, DeploymentData.empty, process, deploymentUpdateStrategy))
@@ -121,7 +130,11 @@ trait StreamingDockerTest extends TestContainersForAll
 
   protected def cancelProcess(processId: String, deploymentManager: DeploymentManager): Unit = {
     implicit val freshnessPolicy: DataFreshnessPolicy = DataFreshnessPolicy.Fresh
-    assert(deploymentManager.processCommand(DMCancelScenarioCommand(ProcessName(processId), user = userToAct)).isReadyWithin(10 seconds))
+    assert(
+      deploymentManager
+        .processCommand(DMCancelScenarioCommand(ProcessName(processId), user = userToAct))
+        .isReadyWithin(10 seconds)
+    )
     eventually {
       val runningJobs = deploymentManager
         .getProcessStates(ProcessName(processId))
@@ -139,9 +152,12 @@ trait StreamingDockerTest extends TestContainersForAll
 
   protected def classPath: String
 
-  private def config(jobManagerRestUrl: URL): ConfigWithUnresolvedVersion = ConfigWithUnresolvedVersion(ConfigFactory.load()
-    .withValue("deploymentConfig.restUrl", fromAnyRef(jobManagerRestUrl.toExternalForm))
-    .withValue("modelConfig.classPath", ConfigValueFactory.fromIterable(Collections.singletonList(classPath)))
-    .withValue("category", fromAnyRef("Category1")))
+  private def config(jobManagerRestUrl: URL): ConfigWithUnresolvedVersion = ConfigWithUnresolvedVersion(
+    ConfigFactory
+      .load()
+      .withValue("deploymentConfig.restUrl", fromAnyRef(jobManagerRestUrl.toExternalForm))
+      .withValue("modelConfig.classPath", ConfigValueFactory.fromIterable(Collections.singletonList(classPath)))
+      .withValue("category", fromAnyRef("Category1"))
+  )
 
 }
