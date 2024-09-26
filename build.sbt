@@ -18,7 +18,7 @@ val sttpV                = "3.8.11"
 val kafkaV               = "3.3.1"
 val testContainersScalaV = "0.41.0"
 
-ThisBuild / version := "0.1-SNAPSHOT"
+ThisBuild / version := "1.18.0-SNAPSHOT"
 
 // todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
 val defaultNussknackerV = "1.18.0-staging-2024-09-24-20698-40fc17dbe-SNAPSHOT"
