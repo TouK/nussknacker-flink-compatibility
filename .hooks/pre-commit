@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+set -eu
+
+if git diff --cached --name-only --diff-filter=ACM | grep -E --max-count=1 '\.scala$|\.sbt$' > /dev/null; then
+  ./scripts/formatStagedBackendFiles.sh
+fi

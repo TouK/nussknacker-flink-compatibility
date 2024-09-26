@@ -32,6 +32,14 @@ val nussknackerV = {
   v
 }
 
+lazy val root = (project in file ("."))
+  .enablePlugins(FormatStagedScalaFilesPlugin)
+  .aggregate(modules: _*)
+  .settings(commonSettings(scala212V))
+  .settings(
+    name := "nussknacker-flink-compatibility"
+  )
+
 def commonSettings(scalaV: String) =
   Seq(
     organization := "pl.touk.nussknacker.flinkcompatibility",
@@ -75,8 +83,7 @@ def commonSettings(scalaV: String) =
       }) % Provided cross CrossVersion.full,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionsCompatV
     ),
-    assembly / assemblyOption := (assembly / assemblyOption).value
-      .copy(includeScala = false, level = Level.Info),
+    assembly / assemblyOption := (assembly / assemblyOption).value.withIncludeScala(false).withLevel(Level.Info),
     assembly / assemblyMergeStrategy := nussknackerAssemblyStrategy,
     assembly / assemblyJarName := s"${name.value}-assembly.jar",
     assembly / test := {}
@@ -300,3 +307,11 @@ def nussknackerAssemblyStrategy: String => MergeStrategy = {
 
   case x => MergeStrategy.defaultMergeStrategy(x)
 }
+
+lazy val modules: List[ProjectReference] = List[ProjectReference](
+  flinkBackwardsCompatibleKafkaComponents,
+  flink114ManagerCompat,
+  flink114ModelCompat,
+  flink116ManagerCompat,
+  flink116ModelCompat
+)
