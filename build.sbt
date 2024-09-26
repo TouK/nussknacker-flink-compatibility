@@ -35,13 +35,12 @@ val nussknackerV = {
 lazy val root = (project in file("."))
   .enablePlugins(FormatStagedScalaFilesPlugin)
   .aggregate(modules: _*)
-  .settings(commonSettings(scala212V))
-  .settings(
-    name := "nussknacker-flink-compatibility"
-  )
+  .settings(commonSettings)
+  .settings(disablePublish)
+  .settings(name := "nussknacker-flink-compatibility")
 
-def commonSettings(scalaV: String) =
-  Seq(
+lazy val commonSettings =
+  publishSettings ++ Seq(
     organization                     := "pl.touk.nussknacker.flinkcompatibility",
     resolvers ++= Seq(
       Resolver.sonatypeRepo("public"),
@@ -50,7 +49,7 @@ def commonSettings(scalaV: String) =
       "nexus" at sys.env
         .getOrElse("nexus", "https://nexus.touk.pl/nexus/content/groups/public")
     ),
-    scalaVersion                     := scalaV,
+    scalaVersion                     := scala212V,
     scalacOptions                    := Seq(
       "-unchecked",
       "-deprecation",
@@ -89,8 +88,40 @@ def commonSettings(scalaV: String) =
     assembly / test                  := {}
   )
 
+lazy val publishSettings = Seq(
+  homepage               := Some(url("https://github.com/TouK/nussknacker-flink-compatibility")),
+  licenses               := Seq("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
+  publishMavenStyle      := true,
+  isSnapshot             := version(_ contains "-SNAPSHOT").value,
+  publishTo              := {
+    val defaultNexusUrl = "https://oss.sonatype.org/"
+    if (isSnapshot.value)
+      Some("snapshots" at defaultNexusUrl + "content/repositories/snapshots")
+    else {
+      sonatypePublishToBundle.value
+    }
+  },
+  pomExtra in Global     := {
+    <scm>
+      <connection>scm:git:github.com/TouK/nussknacker-flink-compatibility.git</connection>
+      <developerConnection>scm:git:git@github.com:TouK/nussknacker-flink-compatibility.git</developerConnection>
+      <url>github.com/TouK/nussknacker-flink-compatibility.git</url>
+    </scm>
+      <developers>
+        <developer>
+          <id>TouK</id>
+          <name>TouK</name>
+          <url>https://touk.pl</url>
+        </developer>
+      </developers>
+  },
+  Test / publishArtifact := false,
+)
+
+lazy val disablePublish = publish / skip := true
+
 lazy val flink116KafkaComponents = (project in file("flink116/kafka-components"))
-  .settings(commonSettings(scala212V))
+  .settings(commonSettings)
   .settings(
     name := "nussknacker-flink-1.16-kafka-components",
     libraryDependencies ++= {
@@ -111,7 +142,8 @@ lazy val flink116KafkaComponents = (project in file("flink116/kafka-components")
 
 //Here we use Flink version from Nussknacker, in each compatibility provider it will be overridden.
 lazy val commonTest = (project in file("commonTest"))
-  .settings(commonSettings(scala212V))
+  .settings(commonSettings)
+  .settings(disablePublish)
   .settings(
     name := "commonTest",
     libraryDependencies ++= Seq(
@@ -141,7 +173,8 @@ lazy val commonTest = (project in file("commonTest"))
   .dependsOn(flink116KafkaComponents)
 
 lazy val flink114ModelCompat = (project in file("flink114/model"))
-  .settings(commonSettings(scala212V))
+  .settings(commonSettings)
+  .settings(disablePublish)
   .settings(flinkSettingsCommonForBefore1_15(flink114V))
   .settings(
     name := "flink114-model",
@@ -154,7 +187,8 @@ lazy val flink114ModelCompat = (project in file("flink114/model"))
   .dependsOn(commonTest % "test,it")
 
 lazy val flink114ManagerCompat = (project in file("flink114/manager"))
-  .settings(commonSettings(scala212V))
+  .settings(commonSettings)
+  .settings(disablePublish)
   .configs(IntegrationTest)
   .settings(Defaults.itSettings)
   .settings(flinkSettingsCommonForBefore1_15(flink114V))
@@ -175,7 +209,7 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager"))
   .dependsOn(commonTest % "test,it")
 
 lazy val flink116ModelCompat = (project in file("flink116/model"))
-  .settings(commonSettings(scala212V))
+  .settings(commonSettings)
   .settings(
     name := "flink116-model",
     libraryDependencies ++= deps(flink116V),
@@ -187,7 +221,7 @@ lazy val flink116ModelCompat = (project in file("flink116/model"))
   .dependsOn(commonTest % "test,it")
 
 lazy val flink116ManagerCompat = (project in file("flink116/manager"))
-  .settings(commonSettings(scala212V))
+  .settings(commonSettings)
   .configs(IntegrationTest)
   .settings(Defaults.itSettings)
   .settings(
@@ -302,5 +336,6 @@ lazy val modules: List[ProjectReference] = List[ProjectReference](
   flink114ManagerCompat,
   flink114ModelCompat,
   flink116ManagerCompat,
-  flink116ModelCompat
+  flink116ModelCompat,
+  commonTest
 )
