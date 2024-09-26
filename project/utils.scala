@@ -1,4 +1,4 @@
-import sbt.{Def, Inc, Result, SettingKey, Task, TaskKey, Value}
+import sbt.{CrossVersion, Def, Inc, Result, SettingKey, Task, TaskKey, Value}
 
 object utils {
 
@@ -54,6 +54,21 @@ object utils {
 
       }
 
+  }
+
+  def forScalaVersion[T](version: String)(provide: PartialFunction[(Int, Int), T]): T = {
+    CrossVersion.partialVersion(version) match {
+      case Some((major, minor)) if provide.isDefinedAt((major.toInt, minor.toInt)) =>
+        provide((major.toInt, minor.toInt))
+      case Some(_) =>
+        throw new IllegalArgumentException(s"Scala version $version is not handled")
+      case None =>
+        throw new IllegalArgumentException(s"Invalid Scala version $version")
+    }
+  }
+
+  def codeVersion(flinkCompatibilityVersion: String, nussknackerV: String): String = {
+    s"$flinkCompatibilityVersion-nu$nussknackerV"
   }
 
 }

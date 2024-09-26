@@ -1,17 +1,13 @@
 import sbt.Keys._
 import sbtassembly.AssemblyPlugin.autoImport.assembly
 import sbtassembly.{MergeStrategy, PathList}
+import utils.{codeVersion, forScalaVersion}
 
 val scala212V = "2.12.10"
 val scala213V = "2.13.12"
 
 lazy val supportedScalaVersions = List(scala212V, scala213V)
-
-lazy val defaultScalaV = sys.env.get("NUSSKNACKER_SCALA_VERSION") match {
-  case None | Some("2.12") => scala212V
-  case Some("2.13")        => scala213V
-  case Some(unsupported)   => throw new IllegalArgumentException(s"Nu doesn't support $unsupported Scala version")
-}
+ThisBuild / scalaVersion := scala212V
 
 val scalaCollectionsCompatV = "2.9.0"
 
@@ -26,13 +22,10 @@ val sttpV                = "3.8.11"
 val kafkaV               = "3.3.1"
 val testContainersScalaV = "0.41.0"
 
-ThisBuild / version := "1.0-nu1.18.0-SNAPSHOT"
-
-// todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
-val defaultNussknackerV = "1.18.0-staging-2024-09-24-20698-40fc17dbe-SNAPSHOT"
-
 val nussknackerV = {
-  val v = sys.env
+  // todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
+  val defaultNussknackerV = "1.18.0-staging-2024-09-24-20698-40fc17dbe-SNAPSHOT"
+  val v                   = sys.env
     .get("NUSSKNACKER_VERSION")
     .filterNot(_.isBlank)
     .getOrElse(defaultNussknackerV)
@@ -40,9 +33,17 @@ val nussknackerV = {
   v
 }
 
+val baseVersion = "1.0"
+ThisBuild / version := codeVersion(baseVersion, nussknackerV)
+
 lazy val root = (project in file("."))
   .enablePlugins(FormatStagedScalaFilesPlugin)
-  .aggregate(modules: _*)
+  .aggregate(
+    flink116KafkaComponents,
+    flink116ManagerCompat,
+    flink116ModelCompat,
+    commonTest
+  )
   .settings(commonSettings)
   .settings(
     Seq(
@@ -51,17 +52,6 @@ lazy val root = (project in file("."))
       crossScalaVersions := Nil,
     )
   )
-
-def forScalaVersion[T](version: String)(provide: PartialFunction[(Int, Int), T]): T = {
-  CrossVersion.partialVersion(version) match {
-    case Some((major, minor)) if provide.isDefinedAt((major.toInt, minor.toInt)) =>
-      provide((major.toInt, minor.toInt))
-    case Some(_)                                                                 =>
-      throw new IllegalArgumentException(s"Scala version $version is not handled")
-    case None                                                                    =>
-      throw new IllegalArgumentException(s"Invalid Scala version $version")
-  }
-}
 
 lazy val commonSettings = Seq(
   organization                                    := "pl.touk.nussknacker.flinkcompatibility",
@@ -73,7 +63,6 @@ lazy val commonSettings = Seq(
       .getOrElse("nexus", "https://nexus.touk.pl/nexus/content/groups/public")
   ),
   publish / skip                                  := true,
-  scalaVersion                                    := defaultScalaV,
   crossScalaVersions                              := supportedScalaVersions,
   scalacOptions                                   := Seq(
     "-unchecked",
@@ -290,10 +279,3 @@ def nussknackerAssemblyStrategy: String => MergeStrategy = {
 
   case x => MergeStrategy.defaultMergeStrategy(x)
 }
-
-lazy val modules: List[ProjectReference] = List[ProjectReference](
-  flink116KafkaComponents,
-  flink116ManagerCompat,
-  flink116ModelCompat,
-  commonTest
-)
