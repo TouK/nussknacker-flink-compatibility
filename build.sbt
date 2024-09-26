@@ -181,7 +181,7 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager"))
       .dependsOn(flink114ModelCompat / Compile / assembly)
       .value,
   )
-  .dependsOn(commonTest % Test)
+  .dependsOn(commonTest % IntegrationTest)
 
 lazy val flink116ModelCompat = (project in file("flink116/model"))
   .settings(commonSettings)
@@ -214,7 +214,7 @@ lazy val flink116ManagerCompat = (project in file("flink116/manager"))
       .dependsOn(flink116ModelCompat / Compile / assembly)
       .value,
   )
-  .dependsOn(commonTest % Test)
+  .dependsOn(commonTest % IntegrationTest)
 
 lazy val flink116KafkaComponents = (project in file("flink116/kafka-components"))
   .settings(commonSettings)
