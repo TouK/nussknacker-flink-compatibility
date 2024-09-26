@@ -197,6 +197,7 @@ lazy val flink116ModelCompat = (project in file("flink116/model"))
 
 lazy val flink116ManagerCompat = (project in file("flink116/manager"))
   .settings(commonSettings)
+  .settings(disablePublish)
   .configs(IntegrationTest)
   .settings(Defaults.itSettings)
   .settings(
