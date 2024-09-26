@@ -89,10 +89,10 @@ def commonSettings(scalaV: String) =
     assembly / test                  := {}
   )
 
-lazy val flinkBackwardsCompatibleKafkaComponents = (project in file("backwards-compatible-kafka-components"))
+lazy val flink116KafkaComponents = (project in file("flink116/kafka-components"))
   .settings(commonSettings(scala212V))
   .settings(
-    name := "flink-backwards-compatible-kafka-components",
+    name := "nussknacker-flink-1.16-kafka-components",
     libraryDependencies ++= {
       Seq(
         "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
@@ -138,7 +138,7 @@ lazy val commonTest = (project in file("commonTest"))
       "org.scala-lang.modules" %% "scala-xml"          % "2.1.0"
     )
   )
-  .dependsOn(flinkBackwardsCompatibleKafkaComponents)
+  .dependsOn(flink116KafkaComponents)
 
 lazy val flink114ModelCompat = (project in file("flink114/model"))
   .settings(commonSettings(scala212V))
@@ -298,7 +298,7 @@ def nussknackerAssemblyStrategy: String => MergeStrategy = {
 }
 
 lazy val modules: List[ProjectReference] = List[ProjectReference](
-  flinkBackwardsCompatibleKafkaComponents,
+  flink116KafkaComponents,
   flink114ManagerCompat,
   flink114ModelCompat,
   flink116ManagerCompat,
