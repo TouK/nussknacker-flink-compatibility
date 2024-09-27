@@ -34,4 +34,5 @@ trait FlinkSpec extends BeforeAndAfterAll {
       super.afterAll()
     }
   }
+
 }

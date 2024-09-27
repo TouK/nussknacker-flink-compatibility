@@ -11,12 +11,16 @@ import pl.touk.nussknacker.engine.flink.api.typeinformation.TypeInformationDetec
 trait BaseSchemaCompatibilityTest extends AnyFunSuite with Matchers {
 
   test("Cheks schema compatibility") {
-    val detection = TypeInformationDetection.instance
-    val typingResult = Typed.record(Map("int" -> Typed[Int]))
+    val detection                                   = TypeInformationDetection.instance
+    val typingResult                                = Typed.record(Map("int" -> Typed[Int]))
     val executionConfigWithoutKryo: ExecutionConfig = new ExecutionConfig
-    val serializerSnapshot = detection.forType(typingResult)
+    val serializerSnapshot = detection
+      .forType(typingResult)
       .createSerializer(executionConfigWithoutKryo)
-    serializerSnapshot.snapshotConfiguration().resolveSchemaCompatibility(serializerSnapshot)
+    serializerSnapshot
+      .snapshotConfiguration()
+      .resolveSchemaCompatibility(serializerSnapshot)
       .isCompatibleAsIs shouldBe true
   }
+
 }

@@ -11,12 +11,12 @@ import pl.touk.nussknacker.engine.build.ScenarioBuilder
 import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
 import pl.touk.nussknacker.engine.spel.SpelExtension._
 
-
 trait CommonFlinkStreamingDeploymentManagerSpec extends AnyFunSuite with Matchers with StreamingDockerTest {
+
   test("deploy scenario in running flink") {
     withContainers { case jobManager and _ =>
       val deploymentManager = createDeploymentManager(jobManager.jobmanagerRestUrl)
-      val processId = "runningFlink"
+      val processId         = "runningFlink"
 
       val version = ProcessVersion(VersionId(15), ProcessName(processId), ProcessId(1), "user1", Some(13))
       val process = prepareProcess(processId, Some(1))
@@ -38,11 +38,16 @@ trait CommonFlinkStreamingDeploymentManagerSpec extends AnyFunSuite with Matcher
 
   private def prepareProcess(id: String, parallelism: Option[Int] = None): CanonicalProcess = {
     val baseProcessBuilder = ScenarioBuilder.streaming(id)
-    parallelism.map(baseProcessBuilder.parallelism).getOrElse(baseProcessBuilder)
-      .source("startProcess", "periodic",
+    parallelism
+      .map(baseProcessBuilder.parallelism)
+      .getOrElse(baseProcessBuilder)
+      .source(
+        "startProcess",
+        "periodic",
         "period" -> "T(java.time.Duration).ofSeconds(10)".spel,
-        "count" -> "1".spel,
-        "value" -> "'dummy'".spel)
+        "count"  -> "1".spel,
+        "value"  -> "'dummy'".spel
+      )
       .filter("nightFilter", "true".spel)
       .emptySink("dead-end", "dead-end")
   }
@@ -51,4 +56,5 @@ trait CommonFlinkStreamingDeploymentManagerSpec extends AnyFunSuite with Matcher
     implicit val freshnessPolicy: DataFreshnessPolicy = DataFreshnessPolicy.Fresh
     deploymentManager.getProcessStates(processId).futureValue.value.flatMap(_.version)
   }
+
 }
