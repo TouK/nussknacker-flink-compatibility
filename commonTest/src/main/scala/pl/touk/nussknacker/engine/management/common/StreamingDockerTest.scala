@@ -64,7 +64,7 @@ trait StreamingDockerTest
   }
 
   private def prepareVolumeDir(): Path = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     Files.createTempDirectory(
       "dockerTest",
       PosixFilePermissions.asFileAttribute(PosixFilePermission.values().toSet[PosixFilePermission].asJava)

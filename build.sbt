@@ -20,7 +20,6 @@ val scalaCollectionsCompatV = "2.9.0"
 val silencerV_2_12 = "1.6.0"
 val silencerV      = "1.7.17"
 
-val flink114V            = "1.14.5"
 val flink116V            = "1.16.0"
 val currentFlinkV        = "1.19.1"
 val sttpV                = "3.8.11"
@@ -154,7 +153,7 @@ lazy val commonTest = (project in file("commonTest"))
         ExclusionRule("org.apache.flink", "flink-scala_2.12"),
       ),
       "pl.touk.nussknacker"           %% "nussknacker-flink-executor"                       % nussknackerV,
-      "org.apache.flink"              %% "flink-streaming-scala"                            % currentFlinkV % "provided",
+      "org.apache.flink"               % "flink-streaming-java"                             % currentFlinkV % "provided",
       "com.dimafeng"                  %% "testcontainers-scala-scalatest"                   % testContainersScalaV,
       "pl.touk.nussknacker"           %% "nussknacker-flink-manager"                        % nussknackerV excludeAll (
         ExclusionRule("org.apache.flink", "flink-scala_2.12"),
@@ -169,40 +168,6 @@ lazy val commonTest = (project in file("commonTest"))
     )
   )
   .dependsOn(flink116KafkaComponents)
-
-lazy val flink114ModelCompat = (project in file("flink114/model"))
-  .settings(commonSettings)
-  .settings(flinkSettingsCommonForBefore1_15(flink114V))
-  .settings(
-    name := "nussknacker-flink-1-14-model",
-    libraryDependencies ++= deps(flink114V),
-    dependencyOverrides ++= Seq(
-      "org.apache.kafka"  % "kafka-clients" % kafkaV,
-      "org.apache.kafka" %% "kafka"         % kafkaV
-    )
-  )
-  .dependsOn(commonTest % Test)
-
-lazy val flink114ManagerCompat = (project in file("flink114/manager"))
-  .settings(commonSettings)
-  .configs(IntegrationTest)
-  .settings(Defaults.itSettings)
-  .settings(flinkSettingsCommonForBefore1_15(flink114V))
-  .settings(
-    name                        := "nussknacker-flink-1-14-manager",
-    libraryDependencies ++= managerDeps(flink114V),
-    dependencyOverrides ++= Seq(
-      // For some strange reason, docker client libraries have conflict with schema registry client :/
-      "org.glassfish.jersey.core" % "jersey-common"      % "2.22.2",
-      // must be the same as used by flink - otherwise it is evicted by version from deployment-manager-api
-      "com.typesafe.akka"        %% "akka-actor"         % "2.6.20",
-      "org.scala-lang.modules"   %% "scala-java8-compat" % "1.0.2"
-    ),
-    IntegrationTest / Keys.test := (IntegrationTest / Keys.test)
-      .dependsOn(flink114ModelCompat / Compile / assembly)
-      .value,
-  )
-  .dependsOn(commonTest % IntegrationTest)
 
 lazy val flink116ModelCompat = (project in file("flink116/model"))
   .settings(commonSettings)
@@ -258,29 +223,6 @@ lazy val flink116KafkaComponents = (project in file("flink116/kafka-components")
     )
   )
 
-def flinkExclusionsForBefore1_15 = Seq(
-  "org.apache.flink" % "flink-streaming-java",
-  "org.apache.flink" % "flink-statebackend-rocksdb",
-  "org.apache.flink" % "flink-connector-kafka",
-  "org.apache.flink" % "flink-test-utils"
-)
-
-def flinkDependenciesCommonForBefore1_15(version: String) = Seq(
-  "org.apache.flink" %% "flink-connector-kafka"      % version % "provided",
-  "org.apache.flink"  % "flink-runtime"              % version % "provided",
-  "org.apache.flink" %% "flink-test-utils"           % version % "provided",
-  "org.apache.flink"  % "flink-statebackend-rocksdb" % version % "provided"
-)
-
-def flinkOverridesCommonForBefore1_15(version: String) =
-  flinkDependenciesCommonForBefore1_15(version)
-
-def flinkSettingsCommonForBefore1_15(version: String) = Seq(
-  excludeDependencies ++= flinkExclusionsForBefore1_15,
-  libraryDependencies ++= flinkDependenciesCommonForBefore1_15(version),
-  dependencyOverrides ++= flinkOverrides(version) ++ flinkOverridesCommonForBefore1_15(version)
-)
-
 def managerDeps(version: String) = Seq(
   "pl.touk.nussknacker"           %% "nussknacker-flink-manager"          % nussknackerV excludeAll (
     ExclusionRule("org.apache.flink", "flink-scala_2.12"),
@@ -288,7 +230,7 @@ def managerDeps(version: String) = Seq(
   "pl.touk.nussknacker"           %% "nussknacker-http-utils"             % nussknackerV         % "provided,it,test",
   "pl.touk.nussknacker"           %% "nussknacker-scenario-compiler"      % nussknackerV         % "provided,it,test",
   "pl.touk.nussknacker"           %% "nussknacker-deployment-manager-api" % nussknackerV         % "provided",
-  "org.apache.flink"              %% "flink-streaming-scala"              % version excludeAll (
+  "org.apache.flink"               % "flink-streaming-java"               % version excludeAll (
     ExclusionRule("log4j", "log4j"),
     ExclusionRule("org.slf4j", "slf4j-log4j12"),
   ),
@@ -304,7 +246,7 @@ def deps(version: String) = Seq(
   "pl.touk.nussknacker" %% "nussknacker-flink-base-unbounded-components"      % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-executor"                       % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-test-utils"                     % nussknackerV % "test",
-  "org.apache.flink"    %% "flink-streaming-scala"                            % version      % "test, provided",
+  "org.apache.flink"     % "flink-streaming-java"                             % version      % "test, provided",
   // in normal deployment (from designer) flink-metrics-dropwizard and flink-metrics-dropwizard-core should be replaced in flink-dropwizard-metrics-deps directory in container/distribution
   "org.apache.flink"     % "flink-metrics-dropwizard"                         % version,
 )
@@ -319,7 +261,7 @@ def flinkOverrides(version: String) = Seq(
   "org.apache.flink"  % "flink-runtime"              % version % "provided",
   "org.apache.flink"  % "flink-test-utils"           % version % "provided",
   "org.apache.flink"  % "flink-statebackend-rocksdb" % version % "provided",
-  "org.apache.flink" %% "flink-connector-kafka"      % version % "provided",
+  "org.apache.flink"  % "flink-connector-kafka"      % version % "provided",
   "org.apache.flink"  % "flink-metrics-dropwizard"   % version % "test",
 )
 
@@ -351,8 +293,6 @@ def nussknackerAssemblyStrategy: String => MergeStrategy = {
 
 lazy val modules: List[ProjectReference] = List[ProjectReference](
   flink116KafkaComponents,
-  flink114ManagerCompat,
-  flink114ModelCompat,
   flink116ManagerCompat,
   flink116ModelCompat,
   commonTest
