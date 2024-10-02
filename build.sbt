@@ -3,13 +3,22 @@ import sbtassembly.AssemblyPlugin.autoImport.assembly
 import sbtassembly.{MergeStrategy, PathList}
 
 val scala212V = "2.12.10"
+val scala213V = "2.13.12"
+
+lazy val supportedScalaVersions = List(scala212V, scala213V)
+
+lazy val defaultScalaV = sys.env.get("NUSSKNACKER_SCALA_VERSION") match {
+  case None | Some("2.12") => scala212V
+  case Some("2.13")        => scala213V
+  case Some(unsupported)   => throw new IllegalArgumentException(s"Nu doesn't support $unsupported Scala version")
+}
 
 val scalaCollectionsCompatV = "2.9.0"
 
 // Silencer must be compatible with exact scala version - see compatibility matrix: https://search.maven.org/search?q=silencer-plugin
 // Silencer 1.7.x require Scala 2.12.11 (see warning above)
 val silencerV_2_12 = "1.6.0"
-val silencerV      = "1.7.0"
+val silencerV      = "1.7.17"
 
 val flink114V            = "1.14.5"
 val flink116V            = "1.16.0"
@@ -18,7 +27,7 @@ val sttpV                = "3.8.11"
 val kafkaV               = "3.3.1"
 val testContainersScalaV = "0.41.0"
 
-ThisBuild / version := "1.18.0-SNAPSHOT"
+ThisBuild / version := "1.0-nu1.18.0-SNAPSHOT"
 
 // todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
 val defaultNussknackerV = "1.18.0-staging-2024-09-24-20698-40fc17dbe-SNAPSHOT"
@@ -36,62 +45,79 @@ lazy val root = (project in file("."))
   .enablePlugins(FormatStagedScalaFilesPlugin)
   .aggregate(modules: _*)
   .settings(commonSettings)
-  .settings(disablePublish)
-  .settings(name := "nussknacker-flink-compatibility")
-
-lazy val commonSettings =
-  publishSettings ++ Seq(
-    organization                     := "pl.touk.nussknacker.flinkcompatibility",
-    resolvers ++= Seq(
-      Resolver.sonatypeRepo("public"),
-      Opts.resolver.sonatypeSnapshots,
-      "confluent" at "https://packages.confluent.io/maven",
-      "nexus" at sys.env
-        .getOrElse("nexus", "https://nexus.touk.pl/nexus/content/groups/public")
-    ),
-    scalaVersion                     := scala212V,
-    scalacOptions                    := Seq(
-      "-unchecked",
-      "-deprecation",
-      "-encoding",
-      "utf8",
-      "-Xfatal-warnings",
-      "-feature",
-      "-language:postfixOps",
-      "-language:existentials",
-      "-language:higherKinds",
-      "-target:jvm-1.8",
-      "-J-Xss4M"
-    ),
-    addCompilerPlugin(
-      "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full
-    ),
-    // We can't use addCompilerPlugin because it not support usage of scalaVersion.value
-    libraryDependencies += compilerPlugin(
-      "com.github.ghik" % "silencer-plugin" % (CrossVersion
-        .partialVersion(scalaVersion.value) match {
-        case Some((2, 12)) => silencerV_2_12
-        case _             => silencerV
-      }) cross CrossVersion.full
-    ),
-    libraryDependencies ++= Seq(
-      "com.github.ghik"         % "silencer-lib"            % (CrossVersion
-        .partialVersion(scalaVersion.value) match {
-        case Some((2, 12)) => silencerV_2_12
-        case _             => silencerV
-      })                        % Provided cross CrossVersion.full,
-      "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionsCompatV
-    ),
-    assembly / assemblyOption        := (assembly / assemblyOption).value.withIncludeScala(false).withLevel(Level.Info),
-    assembly / assemblyMergeStrategy := nussknackerAssemblyStrategy,
-    assembly / assemblyJarName       := s"${name.value}-assembly.jar",
-    assembly / test                  := {}
+  .settings(
+    Seq(
+      name               := "nussknacker-flink-compatibility",
+      // crossScalaVersions must be set to Nil on the aggregating project
+      crossScalaVersions := Nil,
+    )
   )
+
+def forScalaVersion[T](version: String)(provide: PartialFunction[(Int, Int), T]): T = {
+  CrossVersion.partialVersion(version) match {
+    case Some((major, minor)) if provide.isDefinedAt((major.toInt, minor.toInt)) =>
+      provide((major.toInt, minor.toInt))
+    case Some(_)                                                                 =>
+      throw new IllegalArgumentException(s"Scala version $version is not handled")
+    case None                                                                    =>
+      throw new IllegalArgumentException(s"Invalid Scala version $version")
+  }
+}
+
+lazy val commonSettings = Seq(
+  organization                                    := "pl.touk.nussknacker.flinkcompatibility",
+  resolvers ++= Seq(
+    Resolver.sonatypeRepo("public"),
+    Opts.resolver.sonatypeSnapshots,
+    "confluent" at "https://packages.confluent.io/maven",
+    "nexus" at sys.env
+      .getOrElse("nexus", "https://nexus.touk.pl/nexus/content/groups/public")
+  ),
+  publish / skip                                  := true,
+  scalaVersion                                    := defaultScalaV,
+  crossScalaVersions                              := supportedScalaVersions,
+  scalacOptions                                   := Seq(
+    "-unchecked",
+    "-deprecation",
+    "-encoding",
+    "utf8",
+    "-Xfatal-warnings",
+    "-feature",
+    "-language:postfixOps",
+    "-language:existentials",
+    "-language:higherKinds",
+    "-target:jvm-1.8",
+    "-J-Xss4M"
+  ),
+  libraryDependencies ++= forScalaVersion(scalaVersion.value) {
+    case (2, 12) => Seq(compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full))
+    case _       => Seq()
+  },
+  // We can't use addCompilerPlugin because it not support usage of scalaVersion.value
+  libraryDependencies += compilerPlugin(
+    "com.github.ghik" % "silencer-plugin" % forScalaVersion(scalaVersion.value) {
+      case (2, 12) => silencerV_2_12
+      case _       => silencerV
+    } cross CrossVersion.full
+  ),
+  libraryDependencies ++= Seq(
+    "com.github.ghik" % "silencer-lib" % forScalaVersion(scalaVersion.value) {
+      case (2, 12) => silencerV_2_12
+      case _       => silencerV
+    }                 % Provided cross CrossVersion.full
+  ),
+  libraryDependencies += "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionsCompatV,
+  assembly / assemblyOption                       := (assembly / assemblyOption).value.withIncludeScala(false).withLevel(Level.Info),
+  assembly / assemblyMergeStrategy                := nussknackerAssemblyStrategy,
+  assembly / assemblyJarName                      := s"${name.value}-assembly.jar",
+  assembly / test                                 := {}
+)
 
 lazy val publishSettings = Seq(
   homepage               := Some(url("https://github.com/TouK/nussknacker-flink-compatibility")),
   licenses               := Seq("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   publishMavenStyle      := true,
+  publish / skip         := false,
   isSnapshot             := version(_ contains "-SNAPSHOT").value,
   publishTo              := {
     val defaultNexusUrl = "https://oss.sonatype.org/"
@@ -113,12 +139,9 @@ lazy val publishSettings = Seq(
   Test / publishArtifact := false,
 )
 
-lazy val disablePublish = publish / skip := true
-
 //Here we use Flink version from Nussknacker, in each compatibility provider it will be overridden.
 lazy val commonTest = (project in file("commonTest"))
   .settings(commonSettings)
-  .settings(disablePublish)
   .settings(
     name := "commonTest",
     libraryDependencies ++= Seq(
@@ -149,7 +172,6 @@ lazy val commonTest = (project in file("commonTest"))
 
 lazy val flink114ModelCompat = (project in file("flink114/model"))
   .settings(commonSettings)
-  .settings(disablePublish)
   .settings(flinkSettingsCommonForBefore1_15(flink114V))
   .settings(
     name := "nussknacker-flink-1-14-model",
@@ -163,7 +185,6 @@ lazy val flink114ModelCompat = (project in file("flink114/model"))
 
 lazy val flink114ManagerCompat = (project in file("flink114/manager"))
   .settings(commonSettings)
-  .settings(disablePublish)
   .configs(IntegrationTest)
   .settings(Defaults.itSettings)
   .settings(flinkSettingsCommonForBefore1_15(flink114V))
@@ -185,6 +206,7 @@ lazy val flink114ManagerCompat = (project in file("flink114/manager"))
 
 lazy val flink116ModelCompat = (project in file("flink116/model"))
   .settings(commonSettings)
+  .settings(publishSettings)
   .settings(
     name := "nussknacker-flink-1-16-model",
     libraryDependencies ++= deps(flink116V),
@@ -197,7 +219,6 @@ lazy val flink116ModelCompat = (project in file("flink116/model"))
 
 lazy val flink116ManagerCompat = (project in file("flink116/manager"))
   .settings(commonSettings)
-  .settings(disablePublish)
   .configs(IntegrationTest)
   .settings(Defaults.itSettings)
   .settings(
@@ -218,6 +239,7 @@ lazy val flink116ManagerCompat = (project in file("flink116/manager"))
 
 lazy val flink116KafkaComponents = (project in file("flink116/kafka-components"))
   .settings(commonSettings)
+  .settings(publishSettings)
   .settings(
     name := "nussknacker-flink-1-16-kafka-components",
     libraryDependencies ++= {
