@@ -22,7 +22,7 @@ val sttpV                = "3.8.11"
 val kafkaV               = "3.3.1"
 val testContainersScalaV = "0.41.0"
 
-val baseVersion  = "1.0"
+val baseVersion  = "1.0-SNAPSHOT"
 // todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
 val nussknackerV = "1.18.0-staging-2024-10-01-20796-0b0373cb1-SNAPSHOT"
 ThisBuild / version := codeVersion(baseVersion, nussknackerV)
@@ -97,7 +97,7 @@ lazy val publishSettings = Seq(
   licenses               := Seq("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   publishMavenStyle      := true,
   publish / skip         := false,
-  isSnapshot             := version(_ contains "-SNAPSHOT").value,
+  isSnapshot             := baseVersion contains "-SNAPSHOT",
   publishTo              := {
     val defaultNexusUrl = "https://oss.sonatype.org/"
     if (isSnapshot.value)
