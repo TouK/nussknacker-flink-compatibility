@@ -1,6 +1,8 @@
-import sbt.Keys._
+import sbt.Keys.*
 import sbtassembly.AssemblyPlugin.autoImport.assembly
 import sbtassembly.{MergeStrategy, PathList}
+import sbtrelease.ReleasePlugin.autoImport.releaseStepCommand
+import sbtrelease.ReleaseStateTransformations.*
 import utils.{codeVersion, forScalaVersion}
 
 val scala212V = "2.12.10"
@@ -38,9 +40,18 @@ lazy val root = (project in file("."))
   .settings(commonSettings)
   .settings(
     Seq(
-      name               := "nussknacker-flink-compatibility",
+      name                          := "nussknacker-flink-compatibility",
       // crossScalaVersions must be set to Nil on the aggregating project
-      crossScalaVersions := Nil,
+      crossScalaVersions            := Nil,
+      releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+      releaseProcess                := Seq[ReleaseStep](
+        checkSnapshotDependencies,
+        runClean,
+        tagRelease,
+        releaseStepCommand("+publishSigned"),
+        releaseStepCommand("sonatypeBundleRelease"),
+        pushChanges
+      )
     )
   )
 

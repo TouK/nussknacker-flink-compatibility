@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  hello-world:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: coursier/setup-action@v1
+        with:
+          jvm: temurin:1.11.0.17
+      - name: Cache ivy packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.cache/coursier
+            ~/.sbt
+          key: sbt-cache-${{ hashFiles('**/*.sbt') }}
+          restore-keys: sbt
+
+      - name: "Config git"
+        run: |
+          git config --global user.name "GitHub Action Release bot"
+          git config --global user.email "support@nussknacker.io"
+
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v5
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PRIVATE_KEY_PASSWORD }}
+
+      - name: List keys
+        run: gpg -K
+
+      - name: "Release"
+        env:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USER }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        run: sbt release
+
+      - name: "Push tag to origin"
+        run: git push HEAD -f
