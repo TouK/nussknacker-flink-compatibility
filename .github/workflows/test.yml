@@ -10,23 +10,15 @@ on:
       - main
       - staging
   workflow_dispatch:
-    inputs:
-      nussknacker_version:
-        description: "Nussknacker version"
-        required: false
-        type: string
-
-env:
-  NUSSKNACKER_VERSION: ${{ inputs.nussknacker_version }}
 
 jobs:
   tests:
     name: Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Cache ivy packages
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: |
             ~/.ivy2/cache
@@ -37,4 +29,4 @@ jobs:
         with:
           java-version: "openjdk@1.11"
       - name: Tests
-        run: sbt test it:test
+        run: sbt +test +it:test
