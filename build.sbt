@@ -22,18 +22,9 @@ val sttpV                = "3.8.11"
 val kafkaV               = "3.3.1"
 val testContainersScalaV = "0.41.0"
 
-val nussknackerV = {
-  // todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
-  val defaultNussknackerV = "1.18.0-staging-2024-09-24-20698-40fc17dbe-SNAPSHOT"
-  val v                   = sys.env
-    .get("NUSSKNACKER_VERSION")
-    .filterNot(_.isBlank)
-    .getOrElse(defaultNussknackerV)
-  println(s"Nussknacker version: $v")
-  v
-}
-
-val baseVersion = "1.0"
+val baseVersion  = "1.0"
+// todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
+val nussknackerV = "1.18.0-staging-2024-10-01-20796-0b0373cb1-SNAPSHOT"
 ThisBuild / version := codeVersion(baseVersion, nussknackerV)
 
 lazy val root = (project in file("."))
