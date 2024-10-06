@@ -7,7 +7,6 @@ import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
 import org.testcontainers.containers.{BindMode, Network}
 import org.testcontainers.images.builder.ImageFromDockerfile
 import pl.touk.nussknacker.engine.management.common.JobManagerContainer.FlinkJobManagerRestPort
-import pl.touk.nussknacker.engine.util.config.ScalaMajorVersionConfig
 
 import java.net.URL
 import java.nio.charset.StandardCharsets
@@ -19,7 +18,6 @@ object FlinkContainer {
   def flinkImage(flinkVersion: String): ImageFromDockerfile = {
     val dockerfileWithReplacedScalaVersion = IOUtils
       .toString(getClass.getResourceAsStream("/docker/Dockerfile"), StandardCharsets.UTF_8)
-      .replace("${scala.major.version}", ScalaMajorVersionConfig.scalaMajorVersion)
       .replace("${flink.version}", flinkVersion)
     new ImageFromDockerfile()
       .withFileFromString("Dockerfile", dockerfileWithReplacedScalaVersion)
