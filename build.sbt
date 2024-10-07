@@ -29,6 +29,11 @@ val baseVersion  = "1.0-SNAPSHOT"
 val nussknackerV = "1.18.0-staging-2024-10-01-20796-0b0373cb1-SNAPSHOT"
 ThisBuild / version := codeVersion(baseVersion, nussknackerV)
 
+// Global publish settings
+ThisBuild / isSnapshot     := baseVersion contains "-SNAPSHOT"
+ThisBuild / publishTo      := sonatypePublishToBundle.value
+ThisBuild / publish / skip := true
+
 lazy val root = (project in file("."))
   .enablePlugins(FormatStagedScalaFilesPlugin)
   .aggregate(
@@ -45,10 +50,10 @@ lazy val root = (project in file("."))
       crossScalaVersions            := Nil,
       releasePublishArtifactsAction := PgpKeys.publishSigned.value,
       releaseProcess                := Seq[ReleaseStep](
-//        checkSnapshotDependencies, TODO: temporarily disable for manual testing
+        checkSnapshotDependencies,
         runClean,
         tagRelease,
-        releaseStepCommand("+publishSigned"),
+        releaseStepCommandAndRemaining("publishSigned"),
         releaseStepCommand("sonatypeBundleRelease"),
         pushChanges
       )
@@ -64,7 +69,6 @@ lazy val commonSettings = Seq(
     "nexus" at sys.env
       .getOrElse("nexus", "https://nexus.touk.pl/nexus/content/groups/public")
   ),
-  publish / skip                                  := true,
   crossScalaVersions                              := supportedScalaVersions,
   scalacOptions                                   := Seq(
     "-unchecked",
@@ -109,15 +113,6 @@ lazy val publishSettings = Seq(
   publishMavenStyle      := true,
   publish / skip         := false,
   Test / publishArtifact := false,
-  isSnapshot             := baseVersion contains "-SNAPSHOT",
-  publishTo              := {
-    val defaultNexusUrl = "https://oss.sonatype.org/"
-    if (isSnapshot.value)
-      Some("snapshots" at defaultNexusUrl + "content/repositories/snapshots")
-    else {
-      sonatypePublishToBundle.value
-    }
-  },
   pomExtra in Global     := {
     <developers>
         <developer>
