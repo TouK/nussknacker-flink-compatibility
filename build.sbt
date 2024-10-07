@@ -56,7 +56,7 @@ lazy val root = (project in file("."))
   )
 
 lazy val commonSettings = Seq(
-  organization                                    := "pl.touk.nussknacker.flinkcompatibility",
+  organization                                    := "pl.touk.nussknacker",
   resolvers ++= Seq(
     Resolver.sonatypeRepo("public"),
     Opts.resolver.sonatypeSnapshots,
