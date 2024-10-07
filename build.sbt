@@ -44,7 +44,6 @@ lazy val root = (project in file("."))
       // crossScalaVersions must be set to Nil on the aggregating project
       crossScalaVersions            := Nil,
       releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-      publish / skip                := true,
       releaseProcess                := Seq[ReleaseStep](
 //        checkSnapshotDependencies, TODO: temporarily disable for manual testing
         runClean,
@@ -101,7 +100,7 @@ lazy val commonSettings = Seq(
   assembly / assemblyOption                       := (assembly / assemblyOption).value.withIncludeScala(false).withLevel(Level.Info),
   assembly / assemblyMergeStrategy                := nussknackerAssemblyStrategy,
   assembly / assemblyJarName                      := s"${name.value}-assembly.jar",
-  assembly / test                                 := {}
+  assembly / test                                 := {},
 )
 
 lazy val publishSettings = Seq(
@@ -109,6 +108,7 @@ lazy val publishSettings = Seq(
   licenses               := Seq("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   publishMavenStyle      := true,
   publish / skip         := false,
+  Test / publishArtifact := false,
   isSnapshot             := baseVersion contains "-SNAPSHOT",
   publishTo              := {
     val defaultNexusUrl = "https://oss.sonatype.org/"
@@ -127,7 +127,6 @@ lazy val publishSettings = Seq(
         </developer>
       </developers>
   },
-  Test / publishArtifact := false,
 )
 
 //Here we use Flink version from Nussknacker, in each compatibility provider it will be overridden.
