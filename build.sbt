@@ -44,6 +44,7 @@ lazy val root = (project in file("."))
       // crossScalaVersions must be set to Nil on the aggregating project
       crossScalaVersions            := Nil,
       releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+      publish / skip                := true,
       releaseProcess                := Seq[ReleaseStep](
 //        checkSnapshotDependencies, TODO: temporarily disable for manual testing
         runClean,
