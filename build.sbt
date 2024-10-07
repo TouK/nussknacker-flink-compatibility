@@ -164,7 +164,7 @@ lazy val flink116ModelCompat = (project in file("flink116/model"))
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    name := "nussknacker-flink-1-16-model",
+    name := "nussknacker-flink-compatibility-1-16-model",
     libraryDependencies ++= deps(flink116V),
     dependencyOverrides ++= Seq(
       "org.apache.kafka"  % "kafka-clients" % kafkaV,
@@ -178,7 +178,7 @@ lazy val flink116ManagerCompat = (project in file("flink116/manager"))
   .configs(IntegrationTest)
   .settings(Defaults.itSettings)
   .settings(
-    name                        := "nussknacker-flink-1-16-manager",
+    name                        := "nussknacker-flink-compatibility-1-16-manager",
     libraryDependencies ++= managerDeps(flink116V),
     dependencyOverrides ++= Seq(
       // For some strange reason, docker client libraries have conflict with schema registry client :/
@@ -197,7 +197,7 @@ lazy val flink116KafkaComponents = (project in file("flink116/kafka-components")
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    name := "nussknacker-flink-1-16-kafka-components",
+    name := "nussknacker-flink-compatibility-1-16-kafka-components",
     libraryDependencies ++= {
       Seq(
         "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
