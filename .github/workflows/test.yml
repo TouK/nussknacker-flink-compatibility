@@ -1,19 +1,10 @@
-name: Build
+name: Release-manual-testing
 
-on: 
-  push:
-    branches:
-      - main
-      - staging
-  pull_request:
-    branches:
-      - main
-      - staging
+on:
   workflow_dispatch:
 
 jobs:
-  tests:
-    name: Tests
+  hello-world:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,5 +19,27 @@ jobs:
       - uses: olafurpg/setup-scala@v10
         with:
           java-version: "openjdk@1.11"
-      - name: Tests
-        run: sbt +test it:test
+
+      - name: "Config git"
+        run: |
+          git config --global user.name "GitHub Action Release bot"
+          git config --global user.email "support@nussknacker.io"
+
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v5
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PRIVATE_KEY_PASSWORD }}
+
+      - name: List keys
+        run: gpg -K
+
+      - name: "Release"
+        env:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USER }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        run: sbt release
+
+      - name: "Push tag to origin"
+        run: git push HEAD --force-with-lease

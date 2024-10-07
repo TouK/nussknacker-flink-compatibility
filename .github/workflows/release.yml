@@ -42,4 +42,4 @@ jobs:
         run: sbt release
 
       - name: "Push tag to origin"
-        run: git push HEAD -f
+        run: git push HEAD --force-with-lease
