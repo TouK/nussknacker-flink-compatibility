@@ -1,10 +1,10 @@
-name: Release-manual-testing
+name: Release Manual Testing
 
 on:
   workflow_dispatch:
 
 jobs:
-  hello-world:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
