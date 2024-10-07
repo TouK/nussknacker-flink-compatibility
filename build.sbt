@@ -45,7 +45,7 @@ lazy val root = (project in file("."))
       crossScalaVersions            := Nil,
       releasePublishArtifactsAction := PgpKeys.publishSigned.value,
       releaseProcess                := Seq[ReleaseStep](
-        checkSnapshotDependencies,
+//        checkSnapshotDependencies, TODO: temporarily disable for manual testing
         runClean,
         tagRelease,
         releaseStepCommand("+publishSigned"),
