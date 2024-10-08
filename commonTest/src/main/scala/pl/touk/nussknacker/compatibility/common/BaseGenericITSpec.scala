@@ -234,8 +234,6 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
     }
   }
 
-  private def parseJson(str: String) = io.circe.parser.parse(str).right.get
-
   private def consumeOneRawAvroMessage(topic: String) = {
     val consumer = kafkaClient.createConsumer()
     consumer.consumeWithConsumerRecord(topic, secondsToWaitForAvro).head
