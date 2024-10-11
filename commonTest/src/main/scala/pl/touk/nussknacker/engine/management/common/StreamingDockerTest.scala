@@ -84,6 +84,7 @@ trait StreamingDockerTest
     val deploymentManagerDependencies = DeploymentManagerDependencies(
       new ProcessingTypeDeployedScenariosProviderStub(List.empty),
       new ProcessingTypeActionServiceStub(),
+      NoOpScenarioActivityManager,
       actorSystem.dispatcher,
       actorSystem,
       backend
