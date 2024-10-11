@@ -38,7 +38,7 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' }}
         env:
           NUSSKNACKER_VERSION: ${{ github.event.inputs.nussknacker_version }}
-        run: sbt 'set ThisBuild / nussknackerV := "$NUSSKNACKER_VERSION"' +test it:test
+        run: sbt "set ThisBuild / nussknackerV := \"$NUSSKNACKER_VERSION\"" +test it:test
 
       - name: Run Tests for Nussknacker version from branch
         if: ${{ github.event_name != 'workflow_dispatch' }}
