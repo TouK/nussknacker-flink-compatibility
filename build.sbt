@@ -24,10 +24,12 @@ val sttpV                = "3.8.11"
 val kafkaV               = "3.3.1"
 val testContainersScalaV = "0.41.0"
 
-val baseVersion  = "1.0-SNAPSHOT"
+val baseVersion = "1.0-SNAPSHOT"
+
 // todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
-val nussknackerV = "1.18.0-staging-2024-10-01-20796-0b0373cb1-SNAPSHOT"
-ThisBuild / version := codeVersion(baseVersion, nussknackerV)
+val nussknackerV = settingKey[String]("Nussknacker version")
+ThisBuild / nussknackerV := "1.18.0-staging-2024-10-01-20796-0b0373cb1-SNAPSHOT"
+ThisBuild / version      := codeVersion(baseVersion, nussknackerV.value)
 
 // Global publish settings
 ThisBuild / isSnapshot     := baseVersion contains "-SNAPSHOT"
@@ -129,25 +131,28 @@ lazy val commonTest = (project in file("commonTest"))
   .settings(commonSettings)
   .settings(
     name := "commonTest",
-    libraryDependencies ++= Seq(
-      "pl.touk.nussknacker"           %% "nussknacker-default-model"                        % nussknackerV,
-      "pl.touk.nussknacker"           %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
-      "pl.touk.nussknacker"           %% "nussknacker-kafka-test-utils"                     % nussknackerV,
-      "pl.touk.nussknacker"           %% "nussknacker-flink-test-utils"                     % nussknackerV excludeAll (
-        ExclusionRule("log4j", "log4j"),
-        ExclusionRule("org.slf4j", "slf4j-log4j12"),
-        ExclusionRule("org.apache.flink", "flink-scala_2.12"),
-      ),
-      "pl.touk.nussknacker"           %% "nussknacker-flink-executor"                       % nussknackerV,
-      "org.apache.flink"               % "flink-streaming-java"                             % currentFlinkV % "provided",
-      "com.dimafeng"                  %% "testcontainers-scala-scalatest"                   % testContainersScalaV,
-      "pl.touk.nussknacker"           %% "nussknacker-flink-manager"                        % nussknackerV excludeAll (
-        ExclusionRule("org.apache.flink", "flink-scala_2.12"),
-      ),
-      "pl.touk.nussknacker"           %% "nussknacker-deployment-manager-api"               % nussknackerV  % "provided",
-      "pl.touk.nussknacker"           %% "nussknacker-flink-base-components"                % nussknackerV,
-      "com.softwaremill.sttp.client3" %% "async-http-client-backend-future"                 % sttpV
-    ),
+    libraryDependencies ++= {
+      val nussknackerVersion = nussknackerV.value
+      Seq(
+        "pl.touk.nussknacker"           %% "nussknacker-default-model"                        % nussknackerVersion,
+        "pl.touk.nussknacker"           %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerVersion,
+        "pl.touk.nussknacker"           %% "nussknacker-kafka-test-utils"                     % nussknackerVersion,
+        "pl.touk.nussknacker"           %% "nussknacker-flink-test-utils"                     % nussknackerVersion excludeAll (
+          ExclusionRule("log4j", "log4j"),
+          ExclusionRule("org.slf4j", "slf4j-log4j12"),
+          ExclusionRule("org.apache.flink", "flink-scala_2.12"),
+        ),
+        "pl.touk.nussknacker"           %% "nussknacker-flink-executor"                       % nussknackerVersion,
+        "org.apache.flink"               % "flink-streaming-java"                             % currentFlinkV      % "provided",
+        "com.dimafeng"                  %% "testcontainers-scala-scalatest"                   % testContainersScalaV,
+        "pl.touk.nussknacker"           %% "nussknacker-flink-manager"                        % nussknackerVersion excludeAll (
+          ExclusionRule("org.apache.flink", "flink-scala_2.12"),
+        ),
+        "pl.touk.nussknacker"           %% "nussknacker-deployment-manager-api"               % nussknackerVersion % "provided",
+        "pl.touk.nussknacker"           %% "nussknacker-flink-base-components"                % nussknackerVersion,
+        "com.softwaremill.sttp.client3" %% "async-http-client-backend-future"                 % sttpV
+      )
+    },
     dependencyOverrides ++= Seq(
       "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
       "org.scala-lang.modules" %% "scala-xml"          % "2.1.0"
@@ -160,7 +165,10 @@ lazy val flink116ModelCompat = (project in file("flink116/model"))
   .settings(publishSettings)
   .settings(
     name := "nussknacker-flink-compatibility-1-16-model",
-    libraryDependencies ++= deps(flink116V),
+    libraryDependencies ++= {
+      val nussknackerVersion = nussknackerV.value
+      deps(flink116V, nussknackerVersion)
+    },
     dependencyOverrides ++= Seq(
       "org.apache.kafka"  % "kafka-clients" % kafkaV,
       "org.apache.kafka" %% "kafka"         % kafkaV
@@ -174,7 +182,10 @@ lazy val flink116ManagerCompat = (project in file("flink116/manager"))
   .settings(Defaults.itSettings)
   .settings(
     name                        := "nussknacker-flink-compatibility-1-16-manager",
-    libraryDependencies ++= managerDeps(flink116V),
+    libraryDependencies ++= {
+      val nussknackerVersion = nussknackerV.value
+      managerDeps(flink116V, nussknackerVersion)
+    },
     dependencyOverrides ++= Seq(
       // For some strange reason, docker client libraries have conflict with schema registry client :/
       "org.glassfish.jersey.core" % "jersey-common"      % "2.22.2",
@@ -194,13 +205,14 @@ lazy val flink116KafkaComponents = (project in file("flink116/kafka-components")
   .settings(
     name := "nussknacker-flink-compatibility-1-16-kafka-components",
     libraryDependencies ++= {
+      val nussknackerVersion = nussknackerV.value
       Seq(
-        "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
-        "pl.touk.nussknacker" %% "nussknacker-flink-components-api"                 % nussknackerV % "provided",
-        "pl.touk.nussknacker" %% "nussknacker-flink-extensions-api"                 % nussknackerV % "provided",
-        "pl.touk.nussknacker" %% "nussknacker-utils"                                % nussknackerV % "provided",
-        "pl.touk.nussknacker" %% "nussknacker-components-utils"                     % nussknackerV % "provided",
-        "org.apache.flink"     % "flink-streaming-java"                             % flink116V    % "provided"
+        "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerVersion,
+        "pl.touk.nussknacker" %% "nussknacker-flink-components-api"                 % nussknackerVersion % "provided",
+        "pl.touk.nussknacker" %% "nussknacker-flink-extensions-api"                 % nussknackerVersion % "provided",
+        "pl.touk.nussknacker" %% "nussknacker-utils"                                % nussknackerVersion % "provided",
+        "pl.touk.nussknacker" %% "nussknacker-components-utils"                     % nussknackerVersion % "provided",
+        "org.apache.flink"     % "flink-streaming-java"                             % flink116V          % "provided"
       )
     },
     dependencyOverrides ++= Seq(
@@ -209,14 +221,14 @@ lazy val flink116KafkaComponents = (project in file("flink116/kafka-components")
     )
   )
 
-def managerDeps(version: String) = Seq(
+def managerDeps(flinkV: String, nussknackerV: String) = Seq(
   "pl.touk.nussknacker"           %% "nussknacker-flink-manager"          % nussknackerV excludeAll (
     ExclusionRule("org.apache.flink", "flink-scala_2.12"),
   ),
   "pl.touk.nussknacker"           %% "nussknacker-http-utils"             % nussknackerV         % "provided,it,test",
   "pl.touk.nussknacker"           %% "nussknacker-scenario-compiler"      % nussknackerV         % "provided,it,test",
   "pl.touk.nussknacker"           %% "nussknacker-deployment-manager-api" % nussknackerV         % "provided",
-  "org.apache.flink"               % "flink-streaming-java"               % version excludeAll (
+  "org.apache.flink"               % "flink-streaming-java"               % flinkV excludeAll (
     ExclusionRule("log4j", "log4j"),
     ExclusionRule("org.slf4j", "slf4j-log4j12"),
   ),
@@ -224,31 +236,31 @@ def managerDeps(version: String) = Seq(
   "com.softwaremill.sttp.client3" %% "async-http-client-backend-future"   % sttpV,
 )
 
-def deps(version: String) = Seq(
-  "org.apache.flink"     % "flink-statebackend-rocksdb"                       % version      % "provided",
+def deps(flinkV: String, nussknackerV: String) = Seq(
+  "org.apache.flink"     % "flink-statebackend-rocksdb"                       % flinkV       % "provided",
   "pl.touk.nussknacker" %% "nussknacker-default-model"                        % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-base-components"                % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-base-unbounded-components"      % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-executor"                       % nussknackerV,
   "pl.touk.nussknacker" %% "nussknacker-flink-test-utils"                     % nussknackerV % "test",
-  "org.apache.flink"     % "flink-streaming-java"                             % version      % "test, provided",
+  "org.apache.flink"     % "flink-streaming-java"                             % flinkV       % "test, provided",
   // in normal deployment (from designer) flink-metrics-dropwizard and flink-metrics-dropwizard-core should be replaced in flink-dropwizard-metrics-deps directory in container/distribution
-  "org.apache.flink"     % "flink-metrics-dropwizard"                         % version,
+  "org.apache.flink"     % "flink-metrics-dropwizard"                         % flinkV,
 )
 
-def flinkOverrides(version: String) = Seq(
-  "org.apache.flink" %% "flink-streaming-scala"      % version % "provided",
-  "org.apache.flink"  % "flink-streaming-java"       % version % "provided",
-  "org.apache.flink"  % "flink-core"                 % version % "provided",
-  "org.apache.flink"  % "flink-rpc-akka-loader"      % version % "provided",
-  "org.apache.flink" %% "flink-scala"                % version % "provided",
-  "org.apache.flink"  % "flink-avro"                 % version % "provided",
-  "org.apache.flink"  % "flink-runtime"              % version % "provided",
-  "org.apache.flink"  % "flink-test-utils"           % version % "provided",
-  "org.apache.flink"  % "flink-statebackend-rocksdb" % version % "provided",
-  "org.apache.flink"  % "flink-connector-kafka"      % version % "provided",
-  "org.apache.flink"  % "flink-metrics-dropwizard"   % version % "test",
+def flinkOverrides(flinkV: String) = Seq(
+  "org.apache.flink" %% "flink-streaming-scala"      % flinkV % "provided",
+  "org.apache.flink"  % "flink-streaming-java"       % flinkV % "provided",
+  "org.apache.flink"  % "flink-core"                 % flinkV % "provided",
+  "org.apache.flink"  % "flink-rpc-akka-loader"      % flinkV % "provided",
+  "org.apache.flink" %% "flink-scala"                % flinkV % "provided",
+  "org.apache.flink"  % "flink-avro"                 % flinkV % "provided",
+  "org.apache.flink"  % "flink-runtime"              % flinkV % "provided",
+  "org.apache.flink"  % "flink-test-utils"           % flinkV % "provided",
+  "org.apache.flink"  % "flink-statebackend-rocksdb" % flinkV % "provided",
+  "org.apache.flink"  % "flink-connector-kafka"      % flinkV % "provided",
+  "org.apache.flink"  % "flink-metrics-dropwizard"   % flinkV % "test",
 )
 
 def nussknackerAssemblyStrategy: String => MergeStrategy = {
