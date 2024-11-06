@@ -47,7 +47,10 @@ object JobManagerContainer {
           GenericContainer(
             FlinkContainer.flinkImage(flinkVersion),
             command = List("jobmanager"),
-            env = Map("SAVEPOINT_DIR_NAME" -> savepointDir.getFileName.toString),
+            env = Map(
+              "SAVEPOINT_DIR_NAME"                      -> savepointDir.getFileName.toString,
+              "NU_DISABLE_FLINK_TYPE_INFO_REGISTRATION" -> "true"
+            ),
             waitStrategy = new LogMessageWaitStrategy()
               .withRegEx(".*Recover all persisted job graphs.*")
               .withStartupTimeout(Duration.ofSeconds(250)),
@@ -74,8 +77,9 @@ object TaskManagerContainer {
             FlinkContainer.flinkImage(flinkVersion),
             command = List("taskmanager"),
             env = Map(
-              "TASK_MANAGER_NUMBER_OF_TASK_SLOTS" -> TaskManagerSlots.toString,
-              "JOB_MANAGER_RPC_ADDRESS"           -> jobmanagerRpcAddress
+              "TASK_MANAGER_NUMBER_OF_TASK_SLOTS"       -> TaskManagerSlots.toString,
+              "JOB_MANAGER_RPC_ADDRESS"                 -> jobmanagerRpcAddress,
+              "NU_DISABLE_FLINK_TYPE_INFO_REGISTRATION" -> "true"
             ),
             waitStrategy = new LogMessageWaitStrategy().withRegEx(".*Successful registration at resource manager.*")
           ),
