@@ -67,9 +67,7 @@ lazy val commonSettings = Seq(
   resolvers ++= Seq(
     Resolver.sonatypeRepo("public"),
     Opts.resolver.sonatypeSnapshots,
-    "confluent" at "https://packages.confluent.io/maven",
-    "nexus" at sys.env
-      .getOrElse("nexus", "https://nexus.touk.pl/nexus/content/groups/public")
+    "confluent" at "https://packages.confluent.io/maven"
   ),
   crossScalaVersions                              := supportedScalaVersions,
   scalacOptions                                   := Seq(
