@@ -20,6 +20,7 @@ val silencerV      = "1.7.17"
 
 val flink118V            = "1.18.1"
 val currentFlinkV        = "1.19.1"
+val flinkKafkaConnectorV = "3.2.0"
 val sttpV                = "3.8.11"
 val kafkaV               = "3.3.1"
 val testContainersScalaV = "0.41.0"
@@ -247,19 +248,26 @@ def deps(flinkV: String, nussknackerV: String) = Seq(
   "org.apache.flink"     % "flink-metrics-dropwizard"                         % flinkV,
 )
 
-def flinkOverrides(flinkV: String) = Seq(
-  "org.apache.flink" %% "flink-streaming-scala"      % flinkV % "provided",
-  "org.apache.flink"  % "flink-streaming-java"       % flinkV % "provided",
-  "org.apache.flink"  % "flink-core"                 % flinkV % "provided",
-  "org.apache.flink"  % "flink-rpc-akka-loader"      % flinkV % "provided",
-  "org.apache.flink" %% "flink-scala"                % flinkV % "provided",
-  "org.apache.flink"  % "flink-avro"                 % flinkV % "provided",
-  "org.apache.flink"  % "flink-runtime"              % flinkV % "provided",
-  "org.apache.flink"  % "flink-test-utils"           % flinkV % "provided",
-  "org.apache.flink"  % "flink-statebackend-rocksdb" % flinkV % "provided",
-  "org.apache.flink"  % "flink-connector-kafka"      % flinkV % "provided",
-  "org.apache.flink"  % "flink-metrics-dropwizard"   % flinkV % "test",
-)
+def flinkOverrides(flinkV: String) = {
+  val VersionPattern             = """^(\d+\.\d+)\..*""".r("majorMinorPart")
+  val flinkMajorMinorVersionPart = flinkV match {
+    case VersionPattern(majorMinorPart) => majorMinorPart
+    case _                              => "Version format not recognized"
+  }
+  Seq(
+    "org.apache.flink" %% "flink-streaming-scala" % flinkV % "provided",
+    "org.apache.flink"  % "flink-streaming-java"       % flinkV                                               % "provided",
+    "org.apache.flink"  % "flink-core"                 % flinkV                                               % "provided",
+    "org.apache.flink"  % "flink-rpc-akka-loader"      % flinkV                                               % "provided",
+    "org.apache.flink" %% "flink-scala"                % flinkV                                               % "provided",
+    "org.apache.flink"  % "flink-avro"                 % flinkV                                               % "provided",
+    "org.apache.flink"  % "flink-runtime"              % flinkV                                               % "provided",
+    "org.apache.flink"  % "flink-test-utils"           % flinkV                                               % "provided",
+    "org.apache.flink"  % "flink-statebackend-rocksdb" % flinkV                                               % "provided",
+    "org.apache.flink"  % "flink-connector-kafka"      % s"$flinkKafkaConnectorV-$flinkMajorMinorVersionPart" % "provided",
+    "org.apache.flink"  % "flink-metrics-dropwizard"   % flinkV                                               % "test",
+  )
+}
 
 def nussknackerAssemblyStrategy: String => MergeStrategy = {
   case PathList(ps @ _*) if ps.last == "NumberUtils.class"                             => MergeStrategy.first
