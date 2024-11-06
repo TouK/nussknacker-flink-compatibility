@@ -18,7 +18,7 @@ val scalaCollectionsCompatV = "2.9.0"
 val silencerV_2_12 = "1.6.0"
 val silencerV      = "1.7.17"
 
-val flink116V            = "1.16.0"
+val flink118V            = "1.18.1"
 val currentFlinkV        = "1.19.1"
 val sttpV                = "3.8.11"
 val kafkaV               = "3.3.1"
@@ -167,12 +167,12 @@ lazy val flink116ModelCompat = (project in file("flink116/model"))
     name := "nussknacker-flink-compatibility-1-16-model",
     libraryDependencies ++= {
       val nussknackerVersion = nussknackerV.value
-      deps(flink116V, nussknackerVersion)
+      deps(flink118V, nussknackerVersion)
     },
     dependencyOverrides ++= Seq(
       "org.apache.kafka"  % "kafka-clients" % kafkaV,
       "org.apache.kafka" %% "kafka"         % kafkaV
-    ) ++ flinkOverrides(flink116V)
+    ) ++ flinkOverrides(flink118V)
   )
   .dependsOn(commonTest % Test)
 
@@ -184,7 +184,7 @@ lazy val flink116ManagerCompat = (project in file("flink116/manager"))
     name                        := "nussknacker-flink-compatibility-1-16-manager",
     libraryDependencies ++= {
       val nussknackerVersion = nussknackerV.value
-      managerDeps(flink116V, nussknackerVersion)
+      managerDeps(flink118V, nussknackerVersion)
     },
     dependencyOverrides ++= Seq(
       // For some strange reason, docker client libraries have conflict with schema registry client :/
@@ -212,7 +212,7 @@ lazy val flink116KafkaComponents = (project in file("flink116/kafka-components")
         "pl.touk.nussknacker" %% "nussknacker-flink-extensions-api"                 % nussknackerVersion % "provided",
         "pl.touk.nussknacker" %% "nussknacker-utils"                                % nussknackerVersion % "provided",
         "pl.touk.nussknacker" %% "nussknacker-components-utils"                     % nussknackerVersion % "provided",
-        "org.apache.flink"     % "flink-streaming-java"                             % flink116V          % "provided"
+        "org.apache.flink"     % "flink-streaming-java"                             % flink118V          % "provided"
       )
     },
     dependencyOverrides ++= Seq(
