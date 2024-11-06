@@ -19,6 +19,7 @@ import pl.touk.nussknacker.engine.api.deployment._
 import pl.touk.nussknacker.engine.api.deployment.simple.SimpleStateStatus
 import pl.touk.nussknacker.engine.api.process.ProcessName
 import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
+import pl.touk.nussknacker.engine.definition.component.Components.ComponentDefinitionExtractionMode.FinalDefinition
 import pl.touk.nussknacker.engine.deployment.{DeploymentData, User}
 import pl.touk.nussknacker.engine.management.FlinkStreamingDeploymentManagerProvider
 import sttp.client3.SttpBackend
@@ -78,7 +79,8 @@ trait StreamingDockerTest
         additionalConfigsFromProvider = Map.empty,
         determineDesignerWideId = componentId => DesignerWideComponentId(componentId.toString),
         workingDirectoryOpt = None,
-        shouldIncludeComponentProvider = _ => true
+        shouldIncludeComponentProvider = _ => true,
+        componentDefinitionExtractionMode = FinalDefinition
       )
     }
     val deploymentManagerDependencies = DeploymentManagerDependencies(

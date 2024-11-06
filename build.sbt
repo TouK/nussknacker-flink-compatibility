@@ -28,7 +28,7 @@ val baseVersion = "1.0-SNAPSHOT"
 
 // todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
 val nussknackerV = settingKey[String]("Nussknacker version")
-ThisBuild / nussknackerV := "1.18.0-staging-2024-10-10-20916-2224d333f-SNAPSHOT"
+ThisBuild / nussknackerV := "1.18.0-RC1"
 ThisBuild / version      := codeVersion(baseVersion, nussknackerV.value)
 
 // Global publish settings
