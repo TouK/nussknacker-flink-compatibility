@@ -202,7 +202,7 @@ lazy val flink116KafkaComponents = (project in file("flink116/kafka-components")
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    name := "nussknacker-flink-compatibility-1-16-kafka-components",
+    name                          := "nussknacker-flink-compatibility-1-16-kafka-components",
     libraryDependencies ++= {
       val nussknackerVersion = nussknackerV.value
       Seq(
@@ -218,6 +218,10 @@ lazy val flink116KafkaComponents = (project in file("flink116/kafka-components")
       "org.apache.kafka"  % "kafka-clients" % kafkaV,
       "org.apache.kafka" %% "kafka"         % kafkaV
     ),
+    Compile / assembly / artifact := {
+      val art = (Compile / assembly / artifact).value
+      art.withClassifier(Some("assembly"))
+    },
     addArtifact(Compile / assembly / artifact, assembly)
   )
 
