@@ -217,7 +217,8 @@ lazy val flink116KafkaComponents = (project in file("flink116/kafka-components")
     dependencyOverrides ++= Seq(
       "org.apache.kafka"  % "kafka-clients" % kafkaV,
       "org.apache.kafka" %% "kafka"         % kafkaV
-    )
+    ),
+    addArtifact(Compile / assembly / artifact, assembly)
   )
 
 def managerDeps(flinkV: String, nussknackerV: String) = Seq(
