@@ -194,6 +194,7 @@ lazy val flink118KafkaComponents = (project in file("flink118/kafka-components")
       val nussknackerVersion = nussknackerV.value
       Seq(
         "pl.touk.nussknacker" %% "nussknacker-flink-schemed-kafka-components-utils" % nussknackerVersion,
+        "org.apache.flink"     % "flink-core"                                       % flink118V,
         "pl.touk.nussknacker" %% "nussknacker-flink-components-api"                 % nussknackerVersion % "provided",
         "pl.touk.nussknacker" %% "nussknacker-flink-extensions-api"                 % nussknackerVersion % "provided",
         "pl.touk.nussknacker" %% "nussknacker-utils"                                % nussknackerVersion % "provided",
