@@ -25,15 +25,15 @@ val kafkaV               = "3.3.1"
 val testContainersScalaV = "0.41.0"
 val logbackV             = "1.5.12"
 
-val baseVersion = "1.0-SNAPSHOT"
+val baseVersion = "1.0.0"
+ThisBuild / isSnapshot := true
 
 // todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
 val nussknackerV = settingKey[String]("Nussknacker version")
 ThisBuild / nussknackerV := "1.18.0-preview_flink-typeinfo-registration-opt-out-2024-11-06-21368-c5a33a0cd-SNAPSHOT"
-ThisBuild / version      := codeVersion(baseVersion, nussknackerV.value)
+ThisBuild / version      := codeVersion(baseVersion, nussknackerV.value, (ThisBuild / isSnapshot).value)
 
 // Global publish settings
-ThisBuild / isSnapshot     := baseVersion contains "-SNAPSHOT"
 ThisBuild / publishTo      := sonatypePublishToBundle.value
 ThisBuild / publish / skip := true
 
@@ -287,4 +287,11 @@ def nussknackerAssemblyStrategy: String => MergeStrategy = {
   case PathList("com", "esotericsoftware", "minlog", "Log$Logger.class") => MergeStrategy.first
 
   case x => MergeStrategy.defaultMergeStrategy(x)
+}
+
+lazy val printVersion = taskKey[Unit]("print version")
+
+printVersion := {
+  val s: TaskStreams = streams.value
+  s.log.success(s"Nu version: ${(ThisBuild / version).value}")
 }
