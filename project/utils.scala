@@ -1,6 +1,5 @@
-import sbt.Keys.isSnapshot
 import sbt.librarymanagement.VersionNumber
-import sbt.{CrossVersion, Def, Inc, Result, SettingKey, Task, TaskKey, ThisBuild, Value}
+import sbt.{CrossVersion, Def, Inc, Result, SettingKey, Task, TaskKey, Value}
 
 object utils {
 
@@ -70,8 +69,9 @@ object utils {
   }
 
   def codeVersion(flinkCompatibilityVersion: String, nussknackerV: String, isSnapshot: Boolean): String = {
-    val shortNuVersion = s"${VersionNumber(nussknackerV)._1.get}.${VersionNumber(nussknackerV)._2.get}"
-    val snapshotSuffix = if (isSnapshot) "-SNAPSHOT" else ""
+    val parsedNuVersion = VersionNumber(nussknackerV)
+    val shortNuVersion  = s"${parsedNuVersion._1.get}.${parsedNuVersion._2.get}"
+    val snapshotSuffix  = if (isSnapshot) "-SNAPSHOT" else ""
     s"$flinkCompatibilityVersion-nu$shortNuVersion$snapshotSuffix"
   }
 

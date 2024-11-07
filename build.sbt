@@ -18,8 +18,8 @@ val scalaCollectionsCompatV = "2.9.0"
 val silencerV_2_12 = "1.6.0"
 val silencerV      = "1.7.17"
 
-val flink116V            = "1.16.0"
-val currentFlinkV        = "1.19.1"
+val flink118V            = "1.18.1"
+val flinkConnectorKafkaV = "3.2.0"
 val sttpV                = "3.8.11"
 val kafkaV               = "3.3.1"
 val testContainersScalaV = "0.41.0"
@@ -40,9 +40,9 @@ ThisBuild / publish / skip := true
 lazy val root = (project in file("."))
   .enablePlugins(FormatStagedScalaFilesPlugin)
   .aggregate(
-    flink116KafkaComponents,
-    flink116ManagerCompat,
-    flink116ModelCompat,
+    flink118KafkaComponents,
+    flink118ManagerCompat,
+    flink118ModelCompat,
     commonTest
   )
   .settings(commonSettings)
@@ -142,7 +142,6 @@ lazy val commonTest = (project in file("commonTest"))
           ExclusionRule("org.apache.flink", "flink-scala_2.12"),
         ),
         "pl.touk.nussknacker"           %% "nussknacker-flink-executor"                       % nussknackerVersion,
-        "org.apache.flink"               % "flink-streaming-java"                             % currentFlinkV      % "provided",
         "com.dimafeng"                  %% "testcontainers-scala-scalatest"                   % testContainersScalaV,
         "pl.touk.nussknacker"           %% "nussknacker-flink-manager"                        % nussknackerVersion excludeAll (
           ExclusionRule("org.apache.flink", "flink-scala_2.12"),
@@ -157,33 +156,33 @@ lazy val commonTest = (project in file("commonTest"))
       "org.scala-lang.modules" %% "scala-xml"          % "2.1.0"
     )
   )
-  .dependsOn(flink116KafkaComponents)
+  .dependsOn(flink118KafkaComponents)
 
-lazy val flink116ModelCompat = (project in file("flink116/model"))
+lazy val flink118ModelCompat = (project in file("flink118/model"))
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    name := "nussknacker-flink-compatibility-1-16-model",
+    name := "nussknacker-flink-compatibility-1-18-model",
     libraryDependencies ++= {
       val nussknackerVersion = nussknackerV.value
-      deps(flink116V, nussknackerVersion)
+      deps(flink118V, nussknackerVersion)
     },
     dependencyOverrides ++= Seq(
       "org.apache.kafka"  % "kafka-clients" % kafkaV,
       "org.apache.kafka" %% "kafka"         % kafkaV
-    ) ++ flinkOverrides(flink116V)
+    ) ++ flinkOverrides(flink118V)
   )
   .dependsOn(commonTest % Test)
 
-lazy val flink116ManagerCompat = (project in file("flink116/manager"))
+lazy val flink118ManagerCompat = (project in file("flink118/manager"))
   .settings(commonSettings)
   .configs(IntegrationTest)
   .settings(Defaults.itSettings)
   .settings(
-    name                        := "nussknacker-flink-compatibility-1-16-manager",
+    name                        := "nussknacker-flink-compatibility-1-18-manager",
     libraryDependencies ++= {
       val nussknackerVersion = nussknackerV.value
-      managerDeps(flink116V, nussknackerVersion)
+      managerDeps(flink118V, nussknackerVersion)
     },
     dependencyOverrides ++= Seq(
       // For some strange reason, docker client libraries have conflict with schema registry client :/
@@ -191,18 +190,18 @@ lazy val flink116ManagerCompat = (project in file("flink116/manager"))
       // must be the same as used by flink - otherwise it is evicted by version from deployment-manager-api
       "com.typesafe.akka"        %% "akka-actor"         % "2.6.20",
       "org.scala-lang.modules"   %% "scala-java8-compat" % "1.0.2"
-    ),
+    ) ++ flinkOverrides(flink118V),
     IntegrationTest / Keys.test := (IntegrationTest / Keys.test)
-      .dependsOn(flink116ModelCompat / Compile / assembly)
+      .dependsOn(flink118ModelCompat / Compile / assembly)
       .value,
   )
   .dependsOn(commonTest % IntegrationTest)
 
-lazy val flink116KafkaComponents = (project in file("flink116/kafka-components"))
+lazy val flink118KafkaComponents = (project in file("flink118/kafka-components"))
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    name                          := "nussknacker-flink-compatibility-1-16-kafka-components",
+    name                          := "nussknacker-flink-compatibility-1-18-kafka-components",
     libraryDependencies ++= {
       val nussknackerVersion = nussknackerV.value
       Seq(
@@ -211,13 +210,13 @@ lazy val flink116KafkaComponents = (project in file("flink116/kafka-components")
         "pl.touk.nussknacker" %% "nussknacker-flink-extensions-api"                 % nussknackerVersion % "provided",
         "pl.touk.nussknacker" %% "nussknacker-utils"                                % nussknackerVersion % "provided",
         "pl.touk.nussknacker" %% "nussknacker-components-utils"                     % nussknackerVersion % "provided",
-        "org.apache.flink"     % "flink-streaming-java"                             % flink116V          % "provided"
+        "org.apache.flink"     % "flink-streaming-java"                             % flink118V          % "provided"
       )
     },
     dependencyOverrides ++= Seq(
       "org.apache.kafka"  % "kafka-clients" % kafkaV,
       "org.apache.kafka" %% "kafka"         % kafkaV
-    ),
+    ) ++ flinkOverrides(flink118V),
     Compile / assembly / artifact := {
       val art = (Compile / assembly / artifact).value
       art.withClassifier(Some("assembly"))
@@ -254,19 +253,23 @@ def deps(flinkV: String, nussknackerV: String) = Seq(
   "org.apache.flink"     % "flink-metrics-dropwizard"                         % flinkV,
 )
 
-def flinkOverrides(flinkV: String) = Seq(
-  "org.apache.flink" %% "flink-streaming-scala"      % flinkV % "provided",
-  "org.apache.flink"  % "flink-streaming-java"       % flinkV % "provided",
-  "org.apache.flink"  % "flink-core"                 % flinkV % "provided",
-  "org.apache.flink"  % "flink-rpc-akka-loader"      % flinkV % "provided",
-  "org.apache.flink" %% "flink-scala"                % flinkV % "provided",
-  "org.apache.flink"  % "flink-avro"                 % flinkV % "provided",
-  "org.apache.flink"  % "flink-runtime"              % flinkV % "provided",
-  "org.apache.flink"  % "flink-test-utils"           % flinkV % "provided",
-  "org.apache.flink"  % "flink-statebackend-rocksdb" % flinkV % "provided",
-  "org.apache.flink"  % "flink-connector-kafka"      % flinkV % "provided",
-  "org.apache.flink"  % "flink-metrics-dropwizard"   % flinkV % "test",
-)
+def flinkOverrides(flinkV: String) = {
+  val parsedFlinkVersion = VersionNumber(flinkV)
+  val shortFlinkVersion  = s"${parsedFlinkVersion._1.get}.${parsedFlinkVersion._2.get}"
+  Seq(
+    "org.apache.flink" %% "flink-streaming-scala"      % flinkV                                      % "provided",
+    "org.apache.flink"  % "flink-streaming-java"       % flinkV                                      % "provided",
+    "org.apache.flink"  % "flink-core"                 % flinkV                                      % "provided",
+    "org.apache.flink"  % "flink-rpc-akka-loader"      % flinkV                                      % "provided",
+    "org.apache.flink" %% "flink-scala"                % flinkV                                      % "provided",
+    "org.apache.flink"  % "flink-avro"                 % flinkV                                      % "provided",
+    "org.apache.flink"  % "flink-runtime"              % flinkV                                      % "provided",
+    "org.apache.flink"  % "flink-test-utils"           % flinkV                                      % "provided",
+    "org.apache.flink"  % "flink-statebackend-rocksdb" % flinkV                                      % "provided",
+    "org.apache.flink"  % "flink-connector-kafka"      % s"$flinkConnectorKafkaV-$shortFlinkVersion" % "provided",
+    "org.apache.flink"  % "flink-metrics-dropwizard"   % flinkV                                      % "test",
+  )
+}
 
 def nussknackerAssemblyStrategy: String => MergeStrategy = {
   case PathList(ps @ _*) if ps.last == "NumberUtils.class"                             => MergeStrategy.first
