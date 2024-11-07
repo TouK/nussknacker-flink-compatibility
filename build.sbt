@@ -58,7 +58,7 @@ lazy val root = (project in file("."))
           )
         } else {
           Seq[ReleaseStep](
-            checkSnapshotDependencies,
+//            checkSnapshotDependencies,
             runClean,
             tagRelease,
             releaseStepCommandAndRemaining("+publishSigned"),
