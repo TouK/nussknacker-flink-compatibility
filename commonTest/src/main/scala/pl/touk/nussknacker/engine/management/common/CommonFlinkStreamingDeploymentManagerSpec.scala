@@ -18,7 +18,7 @@ trait CommonFlinkStreamingDeploymentManagerSpec extends AnyFunSuite with Matcher
       val deploymentManager = createDeploymentManager(jobManager.jobmanagerRestUrl)
       val processId         = "runningFlink"
 
-      val version = ProcessVersion(VersionId(15), ProcessName(processId), ProcessId(1), List.empty, "user1", Some(13))
+      val version = ProcessVersion(VersionId(15), ProcessName(processId), ProcessId(1), labels = List.empty, user = "user1", modelVersion = Some(13))
       val process = prepareProcess(processId, Some(1))
 
       deployProcessAndWaitIfRunning(

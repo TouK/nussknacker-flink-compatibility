@@ -23,12 +23,13 @@ val currentFlinkV        = "1.19.1"
 val sttpV                = "3.8.11"
 val kafkaV               = "3.3.1"
 val testContainersScalaV = "0.41.0"
+val logbackV             = "1.5.12"
 
 val baseVersion = "1.0-SNAPSHOT"
 
 // todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
 val nussknackerV = settingKey[String]("Nussknacker version")
-ThisBuild / nussknackerV := "1.18.0-staging-2024-10-10-20916-2224d333f-SNAPSHOT"
+ThisBuild / nussknackerV := "1.18.0-preview_flink-typeinfo-registration-opt-out-2024-11-06-21368-c5a33a0cd-SNAPSHOT"
 ThisBuild / version      := codeVersion(baseVersion, nussknackerV.value)
 
 // Global publish settings
@@ -67,9 +68,7 @@ lazy val commonSettings = Seq(
   resolvers ++= Seq(
     Resolver.sonatypeRepo("public"),
     Opts.resolver.sonatypeSnapshots,
-    "confluent" at "https://packages.confluent.io/maven",
-    "nexus" at sys.env
-      .getOrElse("nexus", "https://nexus.touk.pl/nexus/content/groups/public")
+    "confluent" at "https://packages.confluent.io/maven"
   ),
   crossScalaVersions                              := supportedScalaVersions,
   scalacOptions                                   := Seq(
@@ -227,6 +226,7 @@ def managerDeps(flinkV: String, nussknackerV: String) = Seq(
   ),
   "pl.touk.nussknacker"           %% "nussknacker-http-utils"             % nussknackerV         % "provided,it,test",
   "pl.touk.nussknacker"           %% "nussknacker-scenario-compiler"      % nussknackerV         % "provided,it,test",
+  "ch.qos.logback"                 % "logback-classic"                    % logbackV,
   "pl.touk.nussknacker"           %% "nussknacker-deployment-manager-api" % nussknackerV         % "provided",
   "org.apache.flink"               % "flink-streaming-java"               % flinkV excludeAll (
     ExclusionRule("log4j", "log4j"),

@@ -17,6 +17,7 @@ import pl.touk.nussknacker.engine.api.{JobData, ProcessVersion}
 import pl.touk.nussknacker.engine.build.ScenarioBuilder
 import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
 import pl.touk.nussknacker.engine.deployment.DeploymentData
+import pl.touk.nussknacker.engine.flink.api.typeinformation.FlinkTypeInfoRegistrar
 import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder
 import pl.touk.nussknacker.engine.flink.util.transformer.{FlinkBaseComponentProvider, FlinkKafkaComponentProvider}
 import pl.touk.nussknacker.engine.kafka.{KafkaConfig, KafkaSpec, KafkaTestUtils, UnspecializedTopicName}
@@ -255,11 +256,15 @@ trait BaseGenericITSpec extends AnyFunSuiteLike with Matchers with KafkaSpec wit
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
+
+    FlinkTypeInfoRegistrar.disableFlinkTypeInfoRegistration()
+
     val components = FlinkBaseComponentProvider.Components :::
       new MockFlinkKafkaComponentProvider().create(
         config.getConfig("components.mockKafka"),
         ProcessObjectDependencies.withConfig(ConfigFactory.empty())
       )
+
     val modelData = LocalModelData(config, components, creator)
     registrar = FlinkProcessRegistrar(
       new FlinkProcessCompilerDataFactory(
