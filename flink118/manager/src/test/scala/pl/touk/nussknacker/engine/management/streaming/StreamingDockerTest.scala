@@ -1,4 +1,4 @@
-package pl.touk.nussknacker.engine.management.common
+package pl.touk.nussknacker.engine.management.streaming
 
 import akka.actor.ActorSystem
 import com.dimafeng.testcontainers.lifecycle.and
@@ -12,7 +12,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Millis, Minutes, Span}
 import org.scalatest.{Assertion, Suite}
 import org.testcontainers.containers.Network
-import pl.touk.nussknacker.engine._
 import pl.touk.nussknacker.engine.api.ProcessVersion
 import pl.touk.nussknacker.engine.api.component.DesignerWideComponentId
 import pl.touk.nussknacker.engine.api.deployment._
@@ -22,8 +21,9 @@ import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
 import pl.touk.nussknacker.engine.definition.component.Components.ComponentDefinitionExtractionMode.FinalDefinition
 import pl.touk.nussknacker.engine.deployment.{DeploymentData, User}
 import pl.touk.nussknacker.engine.management.FlinkStreamingDeploymentManagerProvider
-import sttp.client3.SttpBackend
-import sttp.client3.asynchttpclient.future.AsyncHttpClientFutureBackend
+import pl.touk.nussknacker.engine._
+import _root_.sttp.client3.SttpBackend
+import _root_.sttp.client3.asynchttpclient.future.AsyncHttpClientFutureBackend
 
 import java.net.URL
 import java.nio.file.attribute.{PosixFilePermission, PosixFilePermissions}

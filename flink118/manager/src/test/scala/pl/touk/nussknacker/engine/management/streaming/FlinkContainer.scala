@@ -1,4 +1,4 @@
-package pl.touk.nussknacker.engine.management.common
+package pl.touk.nussknacker.engine.management.streaming
 
 import com.dimafeng.testcontainers.GenericContainer
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
@@ -6,7 +6,7 @@ import org.apache.commons.io.IOUtils
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
 import org.testcontainers.containers.{BindMode, Network}
 import org.testcontainers.images.builder.ImageFromDockerfile
-import pl.touk.nussknacker.engine.management.common.JobManagerContainer.FlinkJobManagerRestPort
+import pl.touk.nussknacker.engine.management.streaming.JobManagerContainer.FlinkJobManagerRestPort
 
 import java.net.URL
 import java.nio.charset.StandardCharsets

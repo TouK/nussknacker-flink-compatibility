@@ -2,6 +2,7 @@ package pl.touk.nussknacker.compatibility
 
 import org.apache.flink.configuration.{Configuration, CoreOptions}
 import org.scalatest.{BeforeAndAfterAll, Suite}
+import pl.touk.nussknacker.engine.flink.api.typeinformation.FlinkTypeInfoRegistrar
 import pl.touk.nussknacker.engine.flink.test.FlinkMiniClusterHolder.AdditionalEnvironmentConfig
 import pl.touk.nussknacker.engine.flink.test.{FlinkMiniClusterHolder, FlinkTestConfiguration}
 
@@ -12,6 +13,7 @@ trait FlinkSpec extends BeforeAndAfterAll {
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
+    FlinkTypeInfoRegistrar.disableFlinkTypeInfoRegistration()
 
     val userFlinkClusterConfig = prepareFlinkConfiguration()
     userFlinkClusterConfig.set[java.lang.Boolean](CoreOptions.FILESYTEM_DEFAULT_OVERRIDE, true)

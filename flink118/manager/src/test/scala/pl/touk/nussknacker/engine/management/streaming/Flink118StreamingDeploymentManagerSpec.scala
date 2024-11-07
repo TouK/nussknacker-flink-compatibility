@@ -1,4 +1,4 @@
-package pl.touk.nussknacker.engine.management.common
+package pl.touk.nussknacker.engine.management.streaming
 
 import com.dimafeng.testcontainers.lifecycle.and
 import org.scalatest.funsuite.AnyFunSuite
@@ -9,16 +9,25 @@ import pl.touk.nussknacker.engine.api.deployment.{DataFreshnessPolicy, Deploymen
 import pl.touk.nussknacker.engine.api.process.{ProcessId, ProcessName, VersionId}
 import pl.touk.nussknacker.engine.build.ScenarioBuilder
 import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
+import pl.touk.nussknacker.engine.management.FlinkStreamingDeploymentManagerProvider
 import pl.touk.nussknacker.engine.spel.SpelExtension._
+import pl.touk.nussknacker.engine.util.config.ScalaMajorVersionConfig
 
-trait CommonFlinkStreamingDeploymentManagerSpec extends AnyFunSuite with Matchers with StreamingDockerTest {
+class Flink118StreamingDeploymentManagerSpec extends AnyFunSuite with Matchers with StreamingDockerTest {
 
   test("deploy scenario in running flink") {
     withContainers { case jobManager and _ =>
       val deploymentManager = createDeploymentManager(jobManager.jobmanagerRestUrl)
       val processId         = "runningFlink"
 
-      val version = ProcessVersion(VersionId(15), ProcessName(processId), ProcessId(1), labels = List.empty, user = "user1", modelVersion = Some(13))
+      val version = ProcessVersion(
+        VersionId(15),
+        ProcessName(processId),
+        ProcessId(1),
+        labels = List.empty,
+        user = "user1",
+        modelVersion = Some(13)
+      )
       val process = prepareProcess(processId, Some(1))
 
       deployProcessAndWaitIfRunning(
@@ -56,5 +65,13 @@ trait CommonFlinkStreamingDeploymentManagerSpec extends AnyFunSuite with Matcher
     implicit val freshnessPolicy: DataFreshnessPolicy = DataFreshnessPolicy.Fresh
     deploymentManager.getProcessStates(processId).futureValue.value.flatMap(_.version)
   }
+
+  override protected def classPath: String =
+    s"./flink118/model/target/scala-${ScalaMajorVersionConfig.scalaMajorVersion}/nussknacker-flink-compatibility-1-18-model-assembly.jar"
+
+  override protected def deploymentManagerProvider: FlinkStreamingDeploymentManagerProvider =
+    new FlinkStreamingDeploymentManagerProvider()
+
+  override protected val flinkVersion: String = "1.18.1"
 
 }
