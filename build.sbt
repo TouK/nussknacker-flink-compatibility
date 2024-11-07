@@ -25,15 +25,21 @@ val kafkaV               = "3.3.1"
 val testContainersScalaV = "0.41.0"
 val logbackV             = "1.5.12"
 
-val baseVersion = "1.0.0"
-ThisBuild / isSnapshot := false
+val baseVersion = "1.1.0"
+ThisBuild / isSnapshot := true
 
 val nussknackerV = settingKey[String]("Nussknacker version")
 ThisBuild / nussknackerV := "1.18.0-preview_flink-typeinfo-registration-opt-out-2024-11-06-21368-c5a33a0cd-SNAPSHOT"
 ThisBuild / version      := codeVersion(baseVersion, nussknackerV.value, (ThisBuild / isSnapshot).value)
 
 // Global publish settings
-ThisBuild / publishTo      := sonatypePublishToBundle.value
+ThisBuild / publishTo := {
+  if ((ThisBuild / isSnapshot).value)
+    Some("snapshots" at "https://oss.sonatype.org/content/repositories/snapshots")
+  else
+    sonatypePublishToBundle.value
+}
+
 ThisBuild / publish / skip := true
 
 lazy val root = (project in file("."))
