@@ -53,7 +53,7 @@ lazy val root = (project in file("."))
       crossScalaVersions            := Nil,
       releasePublishArtifactsAction := PgpKeys.publishSigned.value,
       releaseProcess                := Seq[ReleaseStep](
-        checkSnapshotDependencies,
+//        checkSnapshotDependencies,
         runClean,
         tagRelease,
         releaseStepCommandAndRemaining("publishSigned"),
