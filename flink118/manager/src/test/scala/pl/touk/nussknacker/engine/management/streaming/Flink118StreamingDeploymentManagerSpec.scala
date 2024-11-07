@@ -16,32 +16,37 @@ import pl.touk.nussknacker.engine.util.config.ScalaMajorVersionConfig
 class Flink118StreamingDeploymentManagerSpec extends AnyFunSuite with Matchers with StreamingDockerTest {
 
   test("deploy scenario in running flink") {
-    withContainers { case jobManager and _ =>
-      val deploymentManager = createDeploymentManager(jobManager.jobmanagerRestUrl)
-      val processId         = "runningFlink"
+    ScalaMajorVersionConfig.scalaMajorVersion match {
+      case "2.12" =>
+        withContainers { case jobManager and _ =>
+          val deploymentManager = createDeploymentManager(jobManager.jobmanagerRestUrl)
+          val processId         = "runningFlink"
 
-      val version = ProcessVersion(
-        VersionId(15),
-        ProcessName(processId),
-        ProcessId(1),
-        labels = List.empty,
-        user = "user1",
-        modelVersion = Some(13)
-      )
-      val process = prepareProcess(processId, Some(1))
+          val version = ProcessVersion(
+            VersionId(15),
+            ProcessName(processId),
+            ProcessId(1),
+            labels = List.empty,
+            user = "user1",
+            modelVersion = Some(13)
+          )
+          val process = prepareProcess(processId, Some(1))
 
-      deployProcessAndWaitIfRunning(
-        process,
-        version,
-        DeploymentUpdateStrategy.ReplaceDeploymentWithSameScenarioName(
-          stateRestoringStrategy = StateRestoringStrategy.RestoreStateFromReplacedJobSavepoint
-        ),
-        deploymentManager
-      )
+          deployProcessAndWaitIfRunning(
+            process,
+            version,
+            DeploymentUpdateStrategy.ReplaceDeploymentWithSameScenarioName(
+              stateRestoringStrategy = StateRestoringStrategy.RestoreStateFromReplacedJobSavepoint
+            ),
+            deploymentManager
+          )
 
-      processVersions(ProcessName(processId), deploymentManager) shouldBe List(version)
+          processVersions(ProcessName(processId), deploymentManager) shouldBe List(version)
 
-      cancelProcess(processId, deploymentManager)
+          cancelProcess(processId, deploymentManager)
+        }
+      case "2.13" =>
+        logger.info("Scala 2.13 - skipping docker-based test")
     }
   }
 
