@@ -1,22 +1,22 @@
 # Running Nussknacker with older Flink versions
 
-[Nussknacker](https://github.com/touk/nussknacker) distribution works with (more or less) latest Flink version.
-Nussknacker mostly uses the stable Flink API. Thanks to that, upgrade of Nussknacker to version which is connected with Flink libraries bump
-is usually possible to do in two steps:
+[Nussknacker](https://github.com/touk/nussknacker) distribution works with (more or less) the latest Flink version.
+Nussknacker mostly uses the stable Flink API. Thanks to this, upgrading Nussknacker to the version that is associated with the Flink libraries bump
+can usually be done in two steps:
 1. Upgrade of Nussknacker, redeploy of all scenarios 
 2. Upgrade of Flink
 
-However, sometimes due to usage of the new Flink API in new Nussknacker version or an incompatible changes in Flink API,
-it is necessary to apply changes in distribution, that make this two-step upgrade possible.
+However, sometimes due to the use of the new Flink API in new Nussknacker version or due to incompatible changes in the Flink API,
+it is necessary to make changes in the distribution to allow this two-step upgrade.
 
-In this repository, you can find the source code of compatibility layers necessary in such situation. Binaries are published in maven central.
-The repository usually contains compatibility layers tested with the last Flink version before the last incompatible change.
-These layers might also work for previous Flink versions, but there is no guaranty for that.
-Because of that we recommend to always upgrade Flink to the latest version supported by Nussknacker.
+In this repository, you'll find the source code of the compatibility layers needed in such a situation. Binaries are published to Maven Central.
+The repository usually contains compatibility layers that were tested with the last Flink version before the last incompatible change.
+These layers may also work with earlier Flink versions, but there is no guarantee.
+For this reason, we recommend that you always upgrade Flink to the latest version supported by Nussknacker.
 
 ## Flink 1.18
 
-Currently, the repository contains the source code of compatibility layers necessary to run Nussknacker >= 1.18 with Flink 1.18:
+Currently, the repository contains the source code of compatibility layers needed to run Nussknacker >= 1.18 with Flink 1.18:
 * `nussknacker-flink-compatibility-1-18-model` - extension that should be added in model classpath 
 * `nussknacker-flink-compatibility-1-18-kafka-components` - extension that should be used as a replacement of `flinkKafka.jar` component provided
 
@@ -29,6 +29,12 @@ Full list of changes that should be done in distribution:
 * `NU_DISABLE_FLINK_TYPE_INFO_REGISTRATION` environment variable should be set to `true` in Designer, Flink Job Manager and Flink Task Manager
 
 In the [Pull Request available in nussknacker-quickstart project](https://github.com/TouK/nussknacker-quickstart/pull/195/files) you can check how such setup can be prepared
+
+The upgrade procedure:
+1. Changes in Nussknacker distribution described above
+2. Upgrade of Nussknacker to 1.18 version, redeploy of all scenarios
+3. Upgrade of Flink to 1.19 version
+4. Revert of changes introduced in step 1., another redeploy of all scenarios
 
 ## Changelog
 
