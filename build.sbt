@@ -50,14 +50,23 @@ lazy val root = (project in file("."))
       // crossScalaVersions must be set to Nil on the aggregating project
       crossScalaVersions            := Nil,
       releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-      releaseProcess                := Seq[ReleaseStep](
-//        checkSnapshotDependencies,
-        runClean,
-        tagRelease,
-        releaseStepCommandAndRemaining("+publishSigned"),
-        releaseStepCommand("sonatypeBundleRelease"),
-        pushChanges
-      )
+      releaseProcess                := {
+        if ((ThisBuild / isSnapshot).value) {
+          Seq[ReleaseStep](
+            runClean,
+            releaseStepCommandAndRemaining("+publishSigned"),
+          )
+        } else {
+          Seq[ReleaseStep](
+            checkSnapshotDependencies,
+            runClean,
+            tagRelease,
+            releaseStepCommandAndRemaining("+publishSigned"),
+            releaseStepCommand("sonatypeBundleRelease"),
+            pushChanges
+          )
+        }
+      }
     )
   )
 
