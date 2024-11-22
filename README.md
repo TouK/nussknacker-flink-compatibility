@@ -38,6 +38,10 @@ The upgrade procedure:
 
 ## Changelog
 
+### 1.0.1
+
+* Bump Nussknacker from preview version to release 1.8.0 version
+
 ### 1.0.0
 
 * Compatibility layers allowing to use Nussknacker 1.18 with Flink 1.18

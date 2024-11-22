@@ -25,7 +25,7 @@ val kafkaV               = "3.3.1"
 val testContainersScalaV = "0.41.0"
 val logbackV             = "1.5.12"
 
-val baseVersion = "1.1.0"
+val baseVersion = "1.0.1"
 ThisBuild / isSnapshot := true
 
 val nussknackerV = settingKey[String]("Nussknacker version")
