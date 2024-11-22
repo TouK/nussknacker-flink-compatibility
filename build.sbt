@@ -26,7 +26,7 @@ val testContainersScalaV = "0.41.0"
 val logbackV             = "1.5.12"
 
 val baseVersion = "1.0.1"
-ThisBuild / isSnapshot := true
+ThisBuild / isSnapshot := false
 
 val nussknackerV = settingKey[String]("Nussknacker version")
 ThisBuild / nussknackerV := "1.18.0"
