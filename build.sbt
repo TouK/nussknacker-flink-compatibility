@@ -29,7 +29,7 @@ val baseVersion = "1.0-SNAPSHOT"
 
 // todo: for now we should regularly bump the version until we start publish single "latest" -SNAPSHOT version
 val nussknackerV = settingKey[String]("Nussknacker version")
-ThisBuild / nussknackerV := "1.18.0-preview_flink-typeinfo-registration-opt-out-2024-11-06-21368-c5a33a0cd-SNAPSHOT"
+ThisBuild / nussknackerV := "1.18.0"
 ThisBuild / version      := codeVersion(baseVersion, nussknackerV.value)
 
 // Global publish settings
