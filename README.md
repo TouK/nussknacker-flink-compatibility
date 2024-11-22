@@ -1,15 +1,43 @@
 # Running Nussknacker with older Flink versions
-Standard [Nussknacker](https://github.com/touk/nussknacker) distribution works for (more or less) latest Flink version. 
-However, Flink upgrade can be fairly complex process for large deployments. Most of Nussknacker code is based on stable Flink API, so changes required to run against older Flink version are usually relatively small. 
 
-This repository contains code that can be used to prepare custom [model](https://nussknacker.io/API.html) and [process engine](https://nussknacker.io/Engines.html) and run older Flink cluster (e.g. 1.14) with newest Nussknacker. 
+[Nussknacker](https://github.com/touk/nussknacker) distribution works with (more or less) the latest Flink version.
+Nussknacker mostly uses the stable Flink API. Thanks to this, upgrading Nussknacker to the version that is associated with the Flink libraries bump
+can usually be done in two steps:
+1. Upgrade of Nussknacker, redeploy of all scenarios 
+2. Upgrade of Flink
 
-Each supported Flink version (e.g. 1.14) comes with two modules:
-- model - additional classes/changes that need to be put into model
-- manager - changes which have to be made in ProcessManager
+However, sometimes due to the use of the new Flink API in new Nussknacker version or due to incompatible changes in the Flink API,
+it is necessary to make changes in the distribution to allow this two-step upgrade.
 
-Following tests will be provided to check if all needed changes are found:
-- GenericItSpec based on [generic model test](https://github.com/TouK/nussknacker/blob/staging/engine/flink/generic/src/test/scala/pl/touk/nussknacker/genericmodel/GenericItSpec.scala)
-- TODO: integration test to check ProcessManager implementation
+In this repository, you'll find the source code of the compatibility layers needed in such a situation. Binaries are published to Maven Central.
+The repository usually contains compatibility layers that were tested with the last Flink version before the last incompatible change.
+These layers may also work with earlier Flink versions, but there is no guarantee.
+For this reason, we recommend that you always upgrade Flink to the latest version supported by Nussknacker.
 
-Additionally, in this repo you can find out classes that can help in running our testing framework with lower Flink's version - see `flink16/test-util` module.
+## Flink 1.18
+
+Currently, the repository contains the source code of compatibility layers needed to run Nussknacker >= 1.18 with Flink 1.18:
+* `nussknacker-flink-compatibility-1-18-model` - extension that should be added in model classpath 
+* `nussknacker-flink-compatibility-1-18-kafka-components` - extension that should be used as a replacement of `flinkKafka.jar` component provided
+
+Full list of changes that should be done in distribution:
+* [nussknacker-flink-compatibility-1-18-kafka-components_2.12-1.0.0-nu1.18-assembly.jar](https://repo1.maven.org/maven2/pl/touk/nussknacker/nussknacker-flink-compatibility-1-18-kafka-components_2.12/1.0.0-nu1.18/nussknacker-flink-compatibility-1-18-kafka-components_2.12-1.0.0-nu1.18-assembly.jar)
+  should be placed in model classpath
+* [nussknacker-flink-compatibility-1-18-model_2.12-1.0.0-nu1.18.jar](https://repo1.maven.org/maven2/pl/touk/nussknacker/nussknacker-flink-compatibility-1-18-model_2.12/1.0.0-nu1.18/nussknacker-flink-compatibility-1-18-model_2.12-1.0.0-nu1.18.jar)
+  should be placed in model classpath
+* `flinkKafka.jar` should be removed from model classpath
+* `NU_DISABLE_FLINK_TYPE_INFO_REGISTRATION` environment variable should be set to `true` in Designer, Flink Job Manager and Flink Task Manager
+
+In the [Pull Request available in nussknacker-quickstart project](https://github.com/TouK/nussknacker-quickstart/pull/195/files) you can check how such setup can be prepared
+
+The upgrade procedure:
+1. Changes in Nussknacker distribution described above
+2. Upgrade of Nussknacker to 1.18 version, redeploy of all scenarios
+3. Upgrade of Flink to 1.19 version
+4. Revert of changes introduced in step 1., another redeploy of all scenarios
+
+## Changelog
+
+### 1.0.0
+
+* Compatibility layers allowing to use Nussknacker 1.18 with Flink 1.18

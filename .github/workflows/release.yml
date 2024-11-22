@@ -40,6 +40,3 @@ jobs:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USER }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: sbt release
-
-      - name: "Push tag to origin"
-        run: git push HEAD --force-with-lease
