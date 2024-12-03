@@ -29,7 +29,7 @@ val baseVersion = "1.0.2"
 ThisBuild / isSnapshot := true
 
 val nussknackerV = settingKey[String]("Nussknacker version")
-ThisBuild / nussknackerV := "1.18.0"
+ThisBuild / nussknackerV := "1.18.1-release_1.18-2024-12-03-21793-7642e4d1a-SNAPSHOT"
 ThisBuild / version      := codeVersion(baseVersion, nussknackerV.value, (ThisBuild / isSnapshot).value)
 
 // Global publish settings
@@ -169,6 +169,7 @@ lazy val flink118ModelCompat = (project in file("flink118/model"))
 
 lazy val flink118ManagerCompat = (project in file("flink118/manager"))
   .settings(commonSettings)
+  .settings(publishSettings)
   .settings(
     name             := "nussknacker-flink-compatibility-1-18-manager",
     libraryDependencies ++= Seq(
