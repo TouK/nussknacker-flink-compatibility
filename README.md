@@ -23,8 +23,7 @@ Currently, the repository contains the source code of compatibility layers neede
 Full list of changes that should be done in distribution:
 * [nussknacker-flink-compatibility-1-18-kafka-components_2.12-1.0.0-nu1.18-assembly.jar](https://repo1.maven.org/maven2/pl/touk/nussknacker/nussknacker-flink-compatibility-1-18-kafka-components_2.12/1.0.0-nu1.18/nussknacker-flink-compatibility-1-18-kafka-components_2.12-1.0.0-nu1.18-assembly.jar)
   should be placed in model classpath
-* [nussknacker-flink-compatibility-1-18-model_2.12-1.0.0-nu1.18.jar](https://repo1.maven.org/maven2/pl/touk/nussknacker/nussknacker-flink-compatibility-1-18-model_2.12/1.0.0-nu1.18/nussknacker-flink-compatibility-1-18-model_2.12-1.0.0-nu1.18.jar)
-  should be placed in model classpath
+* jar with deployment manager (todo: add link when published) should be placed in `/managers` dir and exiting flink deployment managers jars have to be deleted (`development-tests-manager.jar`, `nussknacker-flink-periodic-manager.jar`) 
 * `flinkKafka.jar` should be removed from model classpath
 * `NU_DISABLE_FLINK_TYPE_INFO_REGISTRATION` environment variable should be set to `true` in Designer, Flink Job Manager and Flink Task Manager
 
@@ -37,6 +36,10 @@ The upgrade procedure:
 4. Revert of changes introduced in step 1., another redeploy of all scenarios
 
 ## Changelog
+
+### 1.0.2
+
+* PreFlink119TypeInformationDetection registration has been removed due to fixup to redeployments in [core nussknacker](https://github.com/TouK/nussknacker/pull/7270) 
 
 ### 1.0.1
 
